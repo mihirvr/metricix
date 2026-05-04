@@ -15,7 +15,6 @@
 
 **P95 Latency &lt; 15ms &nbsp;|&nbsp; &gt; 1,000 req/sec on 1 vCPU &nbsp;|&nbsp; Zero Silent Data Loss**
 
-[Getting Started](#-quick-start) · [Architecture](#-architecture) · [API Reference](#-api-reference) · [Deployment](#-deployment-single-node-aws-ec2) · [Configuration](#-configuration-reference) · [Docs](#-documentation)
 
 </div>
 
