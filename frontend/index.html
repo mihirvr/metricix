@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Awesome Store</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to My Store</h1>
+    <p>Clicking these buttons will silently fire data to your local Metricix Engine.</p>
+
+    <button onclick="trackMetricixEvent('add_to_cart', { item: 'Sneakers', price: 120 })">Add to Cart</button>
+    <button onclick="trackMetricixEvent('checkout_started', { cart_total: 120 })">Checkout</button>
+
+    <!-- 🚀 THE METRICIX TRACKING SNIPPET -->
+    <script>
+        // 1. Automatically track a page view as soon as the site loads
+        window.onload = function() {
+            trackMetricixEvent('page_view', { browser: navigator.userAgent });
+        };
+
+        // 2. The core tracking function
+        function trackMetricixEvent(eventName, payloadData) {
+            fetch('http://localhost:8080/api/v1/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'mtx_pub_final_test' //'mtx_pub_test_123'
+                },
+                body: JSON.stringify({
+                    event_type: eventName,
+                    url: window.location.href,
+                    payload: payloadData
+                })
+            })
+            .then(response => console.log("Metricix Status:", response.status))
+            .catch(error => console.error("Metricix Error:", error));
+        }
+    </script>
+
+</body>
+</html>

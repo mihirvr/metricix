@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: metricix_admin
+      POSTGRES_PASSWORD: super_secret_password_123
+      POSTGRES_DB: metricix_db
+    ports:
+      - "5433:5432"

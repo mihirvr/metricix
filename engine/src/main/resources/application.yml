@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: metricix
+
+  # 1. Non-Blocking PostgreSQL Connection
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5433/metricix_db
+    username: metricix_admin
+    password: super_secret_password_123
+
+  # 2. Synchronous PostgreSQL Connection (Used ONLY by Flyway to build tables)
+  flyway:
+    url: jdbc:postgresql://localhost:5433/metricix_db
+    user: metricix_admin
+    password: super_secret_password_123
+    enabled: true
+
+  # 3. Redis Connection
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# Adjust logging so we can see what the engine is doing
+logging:
+  level:
+    org.springframework.r2dbc: DEBUG
+    org.springframework.data.r2dbc: DEBUG

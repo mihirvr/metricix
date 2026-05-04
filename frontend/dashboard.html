@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metricix | Dynamic Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .controls { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
+        select { padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; min-width: 250px; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #2980b9; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e9ecef; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #2c3e50; }
+        .payload-cell { font-family: monospace; font-size: 0.85em; background: #fdfdfd; color: #666; border: 1px solid #eee; padding: 5px; border-radius: 4px; }
+        .badge { background: #e8f4fd; color: #3498db; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Metricix Analytics</h1>
+    
+    <div class="controls">
+        <div>
+            <label for="tenant-select" style="margin-right: 10px;">Active Tenant:</label>
+            <select id="tenant-select" onchange="fetchEvents()">
+                <option value="">Searching for tenants...</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="loadTenants()">🔄 Refresh Tenant List</button>
+            <button onclick="fetchEvents()" style="background: #2ecc71;">⚡ Update Data</button>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="trafficChart" height="80"></canvas>
+    </div>
+
+    <h3>Recent Event Log</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Time Received</th>
+                <th>Event Type</th>
+                <th>Source URL</th>
+                <th>Payload Data</th>
+            </tr>
+        </thead>
+        <tbody id="event-table-body">
+            <tr><td colspan="4" style="text-align: center;">Loading data...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const BASE_URL = 'http://localhost:8080/api/v1';
+    let myChart = null;
+
+    // 1. DISCOVER TENANTS FROM POSTGRES
+    function loadTenants() {
+        const select = document.getElementById('tenant-select');
+        
+        fetch(`${BASE_URL}/tenants`)
+            .then(res => res.json())
+            .then(tenants => {
+                const previousValue = select.value;
+                select.innerHTML = ''; 
+
+                if (tenants.length === 0) {
+                    select.innerHTML = '<option value="">No Active Tenants Found</option>';
+                    return;
+                }
+
+                tenants.forEach(id => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = id; 
+                    select.appendChild(option);
+                });
+
+                // Restore selection or default to first
+                if (previousValue && tenants.includes(previousValue)) {
+                    select.value = previousValue;
+                }
+                
+                fetchEvents(); 
+            })
+            .catch(err => {
+                console.error("Tenant Discovery Error:", err);
+                select.innerHTML = '<option value="">Engine Offline</option>';
+            });
+    }
+
+    // 2. FETCH DATA FOR SELECTED TENANT
+    function fetchEvents() {
+        const tableBody = document.getElementById('event-table-body');
+        const selectedTenant = document.getElementById('tenant-select').value;
+        
+        if (!selectedTenant) return;
+
+        fetch(`${BASE_URL}/events?limit=50`, {
+            method: 'GET',
+            headers: { 'X-API-Key': selectedTenant }
+        })
+        .then(res => res.json())
+        .then(events => {
+            tableBody.innerHTML = ''; 
+            
+            if (events.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No data logged yet.</td></tr>';
+                updateChart({});
+                return;
+            }
+
+            const eventCounts = {};
+            events.forEach(event => {
+                const date = new Date(event.created_at);
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${timeStr}</td>
+                    <td><span class="badge">${event.event_type}</span></td>
+                    <td>${event.url ? event.url.split('/').pop().substring(0, 20) : 'N/A'}</td>
+                    <td class="payload-cell">${JSON.stringify(event.payload)}</td>
+                `;
+                tableBody.appendChild(row);
+
+                eventCounts[event.event_type] = (eventCounts[event.event_type] || 0) + 1;
+            });
+
+            updateChart(eventCounts);
+        });
+    }
+
+    // 3. DRAW CHART
+    function updateChart(dataCounts) {
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(dataCounts),
+                datasets: [{
+                    label: 'Event Volume',
+                    data: Object.values(dataCounts),
+                    backgroundColor: '#3498db',
+                    borderRadius: 5
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+
+    window.onload = loadTenants;
+</script>
+
+</body>
+</html>

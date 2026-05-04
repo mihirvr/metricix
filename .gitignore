@@ -1,0 +1,33 @@
+# --- Java & Gradle ---
+.gradle/
+build/
+bin/
+out/
+.gradle-home/
+*.class
+*.jar
+*.war
+
+# --- IDEs & Editors ---
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# --- Docker ---
+# We keep Dockerfile & docker-compose.yml, but ignore local volumes if you create them
+data/
+db-data/
+
+# --- Operating Systems ---
+.DS_Store
+Thumbs.db
+
+# --- Metricix Specific ---
+frontend/node_modules/
+*.log
+temp/
