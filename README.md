@@ -36,7 +36,7 @@ Built natively on **Spring WebFlux (Project Reactor)**, every operation in the i
 - **Redis-backed buffer** — Events are atomically queued and drained; no data loss on DB failures.
 - **Bulk PostgreSQL writes** — A single `INSERT ... VALUES (), (), ()` per batch cycle, not N individual inserts.
 - **Dead Letter Queue (DLQ) & Archival** — Failed batches are preserved in `metricix_dlq`. Works alongside the soft-delete archival system to ensure no data is ever lost.
-- **API Key Authentication** — Per-key validation with `mtx_pub_` prefix enforcement.
+- **High-Throughput Symmetric Auth** — Per-key validation with `mtx_pub_` prefix enforcement.
 - **Multi-tenant Discovery** — An API endpoint (`/api/v1/tenants`) to automatically discover active tenants for UI population.
 - **Per-key Rate Limiting** — Token bucket algorithm, Redis-backed, works correctly across multiple instances.
 - **Stateless & horizontally scalable** — Deploy N instances behind a load balancer with no config changes.
@@ -60,7 +60,7 @@ Built natively on **Spring WebFlux (Project Reactor)**, every operation in the i
 ┌─────────────────────────────────────────────────────────────────┐│
 │                    SPRING WEBFLUX (Netty)                       ││
 │                                                                 ││
-│   WebFilter: Rate Limiting  ──►  WebFilter: Auth (API Key)      ││
+│   WebFilter: Rate Limiting  ──►  WebFilter: Symmetric Key Lookup      ││
 │                  │                      │                       ││
 │     (Write Path) │         (Read Path)  │                       ││
 │                  ▼                      ▼                       ││

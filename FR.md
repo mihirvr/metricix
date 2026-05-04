@@ -58,7 +58,7 @@ Before pushing to Redis, the API **MUST** append the following server-side field
 
 ## FR-2: Authentication & Security
 
-### FR-2.1 — API Key Validation
+### FR-2.1 — Symmetric API Key Validation
 Every incoming HTTP request **MUST** include the following header:
 
 ```
@@ -73,6 +73,8 @@ The system **MUST** enforce a naming prefix convention on all API keys:
 | Prefix | Purpose |
 |---|---|
 | `mtx_pub_` | Public ingestion write-keys (used by client applications) |
+
+The mtx_pub_ prefix designates a symmetric key intended for client-side (public) environments. It is not an asymmetric public key.
 
 Keys not conforming to a recognized prefix **MUST** be rejected.
 

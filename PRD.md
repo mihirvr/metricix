@@ -29,6 +29,7 @@ By buffering incoming event payloads in **Redis** before bulk-inserting them int
 | Logging | SLF4J / Logback | Structured JSON output |
 | Metrics | Spring Actuator + Micrometer | Prometheus endpoint at `/actuator/prometheus` |
 | Containerization | Docker (multi-stage) | JRE Alpine or Distroless runtime image |
+| Security | Spring Security | Symmetric API Key Auth for minimal latency overhead. |
 
 ---
 
@@ -67,6 +68,7 @@ Migrations execute automatically on startup. Manual DDL against any environment 
 POST /api/v1/track HTTP/1.1
 Host: telemetry.yourdomain.com
 X-API-Key: mtx_pub_8f92a4b1c
+# Uses symmetric key verification to maintain < 15ms ingestion latency.
 Content-Type: application/json
 
 {
