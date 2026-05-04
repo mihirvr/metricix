@@ -45,6 +45,7 @@ By buffering incoming event payloads in **Redis** before bulk-inserting them int
 | `payload` | JSONB | NOT NULL | Unstructured/flexible data payload |
 | `client_ip` | VARCHAR(45) | NULL | Captured client IP address |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW(), INDEX | Time the event was ingested |
+| `is_deleted` | BOOLEAN | DEFAULT FALSE | Soft-delete flag for data archival |
 
 ### Flyway Migration Naming Convention
 
@@ -93,6 +94,83 @@ Content-Type: application/json
 {
   "status": "buffered",
   "timestamp": "2025-05-03T10:00:05.123Z"
+}
+```
+
+---
+
+### `GET /api/v1/tenants`
+
+**Description:** Returns a list of unique tenant IDs that have sent events, for populating UI elements.
+
+**Request:**
+```http
+GET /api/v1/tenants HTTP/1.1
+Host: telemetry.yourdomain.com
+X-API-Key: mtx_pub_...
+```
+
+**Success Response (200):**
+```json
+[
+  "tenant_a",
+  "tenant_b",
+  "tenant_c"
+]
+```
+
+---
+
+### `GET /api/v1/events`
+
+**Description:** Fetches a paginated stream of historical events for a given tenant.
+
+**Request:**
+```http
+GET /api/v1/events?limit=50&offset=100 HTTP/1.1
+Host: telemetry.yourdomain.com
+X-API-Key: mtx_pub_...
+```
+
+**Query Parameters:**
+- `limit` (integer, optional, default: 100): Number of events to return.
+- `offset` (integer, optional, default: 0): Number of events to skip for pagination.
+- `event_type` (string, optional): Filter events by a specific type.
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "event_type": "page_view",
+      "created_at": "...",
+      "payload": {}
+    }
+  ],
+  "has_more": true
+}
+```
+
+---
+
+### `DELETE /api/v1/purge`
+
+**Description:** Performs a "soft delete" on all events associated with the API key's tenant. This is a data archival action and does not permanently remove records.
+
+**Request:**
+```http
+DELETE /api/v1/purge HTTP/1.1
+Host: telemetry.yourdomain.com
+X-API-Key: mtx_pub_...
+```
+
+**Success Response (200):**
+```json
+{
+  "status": "archived",
+  "tenant_id": "the_tenant_id",
+  "events_archived": 12345
 }
 ```
 

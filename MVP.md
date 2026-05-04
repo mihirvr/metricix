@@ -105,14 +105,53 @@ PostgreSQL schema is provisioned automatically on startup. No manual DDL.
 
 ---
 
+### 9. Real-time Dashboard
+
+A Chart.js-powered frontend to visualize event volume by type.
+
+**Success criteria:**
+- Connects to the `/api/v1/events` endpoint to fetch data.
+- Displays a time-series chart showing event counts grouped by `event_type`.
+- UI is served from the `frontend/` directory.
+
+---
+
+### 10. Tenant Discovery API
+
+Automated identification of active clients via a `/api/v1/tenants` endpoint.
+
+**Success criteria:**
+- Returns a JSON array of unique `tenant_id` strings present in the `metricix_events` table.
+- Endpoint is secured via API Key Authentication.
+
+---
+
+### 11. Retrieval API
+
+A `GET /api/v1/events` route for fetching historical data for the UI.
+
+**Success criteria:**
+- Returns paginated event data from PostgreSQL.
+- Supports filtering by `tenant_id` and `event_type` via query parameters.
+- Endpoint is secured via API Key Authentication.
+
+---
+
+### 12. Data Archival (Soft Delete)
+
+A safety-first approach to data removal using an `is_deleted` flag rather than hard `DELETE` commands.
+
+**Success criteria:**
+- `metricix_events` table includes an `is_deleted` boolean column, defaulting to `false`.
+- A `DELETE /api/v1/events/{eventId}` endpoint sets `is_deleted` to `true`.
+- Retrieval APIs exclude records where `is_deleted` is `true` by default.
+
 ## Out of Scope (Explicitly Deferred)
 
 The following features are **not** part of the MVP and must not be built until the ingestion pipeline is proven stable in production:
 
 | Feature | Reason Deferred |
 |---|---|
-| Analytics Dashboard / GUI | Requires stable data model first |
-| OLAP / Complex Query APIs | Out of scope for ingestion-only v1 |
 | Multi-node Redis Clustering | Single Redis instance sufficient for MVP scale |
 | Automated DLQ Replay | Operational tooling, post-MVP |
 | Multi-tenancy UI / Key Management Portal | Admin layer, post-MVP |
@@ -132,3 +171,4 @@ The MVP is considered shippable when **all** of the following pass:
 - [ ] `docker compose up -d` starts the full stack cleanly from a fresh clone with no manual steps.
 - [ ] `/actuator/prometheus` exposes `metricix_events_ingested_total` with counts matching the load test volume.
 - [ ] Flyway migration runs successfully on first boot; idempotent on subsequent boots.
+- [ ] Verify that a purged tenant instantly disappears from the Dashboard dropdown without a page reload.

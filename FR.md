@@ -143,6 +143,8 @@ VALUES ($1,  $2,  $3,  $4,  $5,  $6,  $7),
 
 A single database round-trip per batch is required. Individual per-row inserts are not acceptable.
 
+All data retrieval queries (e.g., for the dashboard or API) **MUST** include a `WHERE is_deleted = FALSE` clause to exclude archived records from the results.
+
 ### FR-5.2 — Dead Letter Queue (DLQ)
 If the database insert **fails** for any reason (connection timeout, SQL error, constraint violation on the batch), the worker **MUST**:
 
@@ -178,3 +180,27 @@ HTTP 429 Too Many Requests
 ```
 
 The rate limiter **MUST** execute in the `WebFilter` chain **before** payload validation and Redis writes — a rate-limited request must not touch Redis.
+
+---
+
+## FR-7: Dashboard Visualization
+
+### FR-7.1 — User Interface
+The system **MUST** provide a browser-based graphical user interface (GUI) served from the `frontend/` directory.
+
+### FR-7.2 — Data Representation
+The GUI **MUST** render a bar chart visualizing the total count of events, grouped by `event_type`, over a configurable time window. The chart **MUST** update in near real-time by polling the `/api/v1/events` endpoint.
+
+---
+
+## FR-8: Soft-Delete Protocol
+
+### FR-8.1 — Archival Endpoint
+The system **MUST** provide an endpoint for data archival:
+
+```
+DELETE /api/v1/purge
+```
+
+### FR-8.2 — Logical Deletion
+This operation **MUST NOT** physically delete rows from the `metricix_events` table. Instead, it **MUST** execute a bulk `UPDATE` statement that sets the `is_deleted` flag to `true` for all records associated with the `tenant_id` of the provided `X-API-Key`. This ensures data is hidden from query APIs but remains recoverable.

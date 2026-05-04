@@ -22,22 +22,22 @@
 
 ## Overview
 
-Metricix is a **self-hosted, non-blocking telemetry ingestion engine** built for engineering teams that need full data ownership, predictable latency, and high throughput — without the cost or lock-in of third-party analytics platforms.
+Metricix is a **self-hosted, non-blocking telemetry ingestion and analytics engine** built for engineering teams that need full data ownership, predictable latency, and high throughput — without the cost or lock-in of third-party analytics platforms.
 
-Built natively on **Spring WebFlux (Project Reactor)**, every operation in the ingestion path is fully asynchronous. Incoming events are immediately buffered in **Redis** and flushed to **PostgreSQL** in bulk by a background worker — decoupling API response time from database write performance entirely.
-
-> **MVP Focus:** The current release is strictly scoped to the ingestion pipeline. There is no GUI or analytics dashboard. The priority is a provably correct, zero-data-loss event buffer with sub-15ms acknowledgement.
+Built natively on **Spring WebFlux (Project Reactor)**, every operation in the ingestion path is fully asynchronous. Incoming events are immediately buffered in **Redis** and flushed to **PostgreSQL** in bulk by a background worker — decoupling API response time from database write performance entirely. The system now includes a real-time dashboard to visualize event data as it arrives.
 
 ---
 
 ## ✨ Features
 
-- **Non-blocking ingestion** — Built on Project Reactor; zero JVM thread blocking on the hot path.
-- **Immediate `202 Accepted`** — API responds before any database interaction occurs.
+- **Non-blocking I/O** — Built on Project Reactor; zero JVM thread blocking on the hot path for both reads and writes.
+- **Interactive Dashboard with Chart.js** — A real-time, browser-based UI to visualize event volume and trends.
+- **Immediate `202 Accepted`** — API responds before any database interaction occurs on ingestion.
 - **Redis-backed buffer** — Events are atomically queued and drained; no data loss on DB failures.
 - **Bulk PostgreSQL writes** — A single `INSERT ... VALUES (), (), ()` per batch cycle, not N individual inserts.
-- **Dead Letter Queue (DLQ)** — Failed batches are preserved in `metricix_dlq`; nothing is ever silently dropped.
+- **Dead Letter Queue (DLQ) & Archival** — Failed batches are preserved in `metricix_dlq`. Works alongside the soft-delete archival system to ensure no data is ever lost.
 - **API Key Authentication** — Per-key validation with `mtx_pub_` prefix enforcement.
+- **Multi-tenant Discovery** — An API endpoint (`/api/v1/tenants`) to automatically discover active tenants for UI population.
 - **Per-key Rate Limiting** — Token bucket algorithm, Redis-backed, works correctly across multiple instances.
 - **Stateless & horizontally scalable** — Deploy N instances behind a load balancer with no config changes.
 - **Prometheus metrics** — Custom ingestion counters and batch size histograms out of the box.
@@ -51,50 +51,52 @@ Built natively on **Spring WebFlux (Project Reactor)**, every operation in the i
 ### Pipeline Flow
 
 ```
+┌──────────────────────────────┐   ┌─────────────────────────────────────────────────────────────────┐
+│    CLIENT APP (Ingestion)    │   │                   CLIENT APP (Dashboard)                      │
+└───────────────┬──────────────┘   └───────────────────────────────┬─────────────────────────────────┘
+                │ POST /api/v1/track                               │ GET /api/v1/tenants
+                │ X-API-Key: mtx_pub_***                           │ GET /api/v1/events?limit=50
+                ▼                                                  │
+┌─────────────────────────────────────────────────────────────────┐│
+│                    SPRING WEBFLUX (Netty)                       ││
+│                                                                 ││
+│   WebFilter: Rate Limiting  ──►  WebFilter: Auth (API Key)      ││
+│                  │                      │                       ││
+│     (Write Path) │         (Read Path)  │                       ││
+│                  ▼                      ▼                       ││
+│     Validate + Decorate Payload      Query Controller           │◄┘
+│ (append received_at, client_ip)                                 │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │                                      │
+      Reactive RPUSH (Lettuce)                           │ R2DBC SELECT
+                  │                                      │ (WHERE is_deleted=FALSE)
+                  ▼                                      │
+┌──────────────────────────────────┐                     │
+│      REDIS 7+ (Event Buffer)     │                     │
+│                                  │                     │
+│    LIST: metricix_events_queue   │                     │
+│    LIST: metricix_dlq            │                     │
+└─────────────────┬────────────────┘                     │
+                  │                                      │
+◄── 202 Accepted ─┘                                      │
+                  │                                      │
+     [Background @Scheduled, every 5s]                   │
+                  │                                      │
+     RENAME queue → processing queue (atomic)            │
+                  │                                      │
+          LRANGE + deserialize                           │
+                  │                                      │
+                  ▼                                      ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                       CLIENT APPLICATION                        │
-└────────────────────────────────┬────────────────────────────────┘
-                                 │  POST /api/v1/track
-                                 │  X-API-Key: mtx_pub_***
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    SPRING WEBFLUX (Netty)                        │
-│                                                                  │
-│   WebFilter: Rate Limiting  ──►  WebFilter: Auth (API Key)      │
-│                                           │                      │
-│                              Validate + Decorate Payload         │
-│                         (append received_at, client_ip)          │
-└────────────────────────────────┬────────────────────────────────┘
-                                 │
-                      Reactive RPUSH (Lettuce)
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     REDIS 7+ (Event Buffer)                      │
-│                                                                  │
-│   LIST: metricix_events_queue                                    │
-│   LIST: metricix_dlq          (failed batch recovery)           │
-└────────────────────────────────┬────────────────────────────────┘
-                                 │
-              ◄──── 202 Accepted (returned immediately) ────────►
-                                 │
-                    [Background @Scheduled, every 5s]
-                                 │
-                    RENAME queue → processing queue  (atomic)
-                                 │
-                         LRANGE + deserialize
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   SPRING DATA R2DBC (Non-blocking)               │
-│                                                                  │
-│   Single bulk INSERT INTO metricix_events VALUES (…),(…),(…)    │
+│                   SPRING DATA R2DBC (Non-blocking)              │
+│                                                                 │
+│   Single bulk INSERT INTO metricix_events VALUES (…),(…),(…)   │
 └────────────────────────────────┬────────────────────────────────┘
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                        POSTGRESQL 16+                           │
-│                                                                  │
+│                                                                 │
 │   Table: metricix_events    (schema managed by Flyway)          │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -442,6 +444,9 @@ docker compose down -v
 # Restart only the API service (e.g. after image update)
 docker compose pull metricix-api && docker compose up -d metricix-api
 
+# Connect to PostgreSQL database
+docker compose exec postgres psql -U metricix_admin -d metricix_db
+
 # Inspect the Dead Letter Queue
 docker exec metricix-redis redis-cli LRANGE metricix_dlq 0 -1
 
@@ -528,8 +533,6 @@ redis-cli LLEN metricix_dlq
 
 The following are explicitly **out of scope for the current MVP**:
 
-- [ ] Analytics dashboard / GUI
-- [ ] OLAP query API (complex event filtering and aggregations)
 - [ ] Multi-node Redis clustering
 - [ ] Automated DLQ replay
 - [ ] API key management portal
