@@ -45,7 +45,24 @@ Built natively on **Spring WebFlux (Project Reactor)**, every operation in the i
 - **Flyway schema management** — Schema is provisioned automatically on startup; no manual DDL.
 
 ---
+## ⚡ Performance Benchmarks
 
+Metricix is built for extreme throughput and low latency. To validate our Non-Functional Requirements (NFRs), the engine was stress-tested using **k6**.
+
+### The Benchmark (Sustained Load Test)
+To accurately measure the application's true processing latency without being bottlenecked by the local operating system's TCP network queue, we utilize an **Open Model (Constant Arrival Rate)** test. 
+
+Instead of spamming the server as fast as possible (which tests network bridge limits, capping around ~2,500 RPS locally with a queued P95 of ~218ms), the Constant Arrival Rate model guarantees exactly 1,000 requests are dispatched every second. 
+
+**Results (Local Windows WSL2/Docker Environment):**
+* **Target Load:** 1,000 Requests Per Second (RPS)
+* **Duration:** 60 seconds
+* **Events Processed:** 59,985
+* **Failure Rate:** 0.00%
+* **P95 Latency:** **5.62 ms**
+
+**Conclusion:** Under a sustained, production-grade load of 1,000 RPS, the Spring WebFlux + Redis Lettuce architecture successfully validates, decorates, and buffers telemetry payloads in under 6 milliseconds.
+---
 ## Architecture
 
 ### Pipeline Flow

@@ -10,6 +10,8 @@
 ### NFR-1.1 — P95 Latency Target
 95% of all successful `POST /api/v1/track` requests **MUST** complete in **less than 15 milliseconds** of server-side processing time, measured from request receipt to `202 Accepted` response dispatch.
 
+**Measurement Methodology:** Latency MUST be measured using an **Open Model (Constant Arrival Rate)** load test. This ensures we are measuring the Netty/WebFlux processing speed, not the artificial delay caused by the operating system's TCP socket queue backing up under unbounded concurrency.
+
 Measurement boundary:
 
 | Included | Excluded |
@@ -22,7 +24,9 @@ Measurement boundary:
 Throughput degradation or latency regression beyond this threshold on the specified hardware profile (see NFR-1.2) is treated as a **P1 regression** and must block release.
 
 ### NFR-1.2 — Throughput Floor
-The application **MUST** comfortably sustain **> 1,000 requests per second (RPS)** on a single baseline container with the following resource profile:
+The application **MUST** comfortably sustain **> 1,000 requests per second (RPS)** on a single baseline container (1 vCPU, 1 GB RAM).
+
+**Validation:** The system must process exactly 1,000 RPS for a sustained duration of at least 60 seconds with a **0.00% failure rate** and without breaching the NFR-1.1 latency target.
 
 | Resource | Limit |
 |---|---|

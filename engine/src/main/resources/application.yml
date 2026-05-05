@@ -15,14 +15,18 @@ spring:
     password: super_secret_password_123
     enabled: true
 
-  # 3. Redis Connection
+  # 3. High-Performance Redis Connection with Pooling
   data:
     redis:
       host: localhost
       port: 6379
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 100
 
-# Adjust logging so we can see what the engine is doing
+# 4. "Silent Running" Mode - Suppress all logs except critical warnings
 logging:
   level:
-    org.springframework.r2dbc: DEBUG
-    org.springframework.data.r2dbc: DEBUG
+    root: WARN
+    com.metricix: WARN
