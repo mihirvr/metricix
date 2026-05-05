@@ -1,47 +1,539 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <title>My Awesome Store</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
-        button:hover { background: #0056b3; }
-    </style>
-</head>
-<body>
-
-    <h1>Welcome to My Store</h1>
-    <p>Clicking these buttons will silently fire data to your local Metricix Engine.</p>
-
-    <button onclick="trackMetricixEvent('add_to_cart', { item: 'Sneakers', price: 120 })">Add to Cart</button>
-    <button onclick="trackMetricixEvent('checkout_started', { cart_total: 120 })">Checkout</button>
-
-    <!-- 🚀 THE METRICIX TRACKING SNIPPET -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metricix - Event Emitter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // 1. Automatically track a page view as soon as the site loads
-        window.onload = function() {
-            trackMetricixEvent('page_view', { browser: navigator.userAgent });
-        };
-
-        // 2. The core tracking function
-        function trackMetricixEvent(eventName, payloadData) {
-            fetch('http://localhost:8080/api/v1/track', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'mtx_pub_final_test' //'mtx_pub_test_123'
-                },
-                body: JSON.stringify({
-                    event_type: eventName,
-                    url: window.location.href,
-                    payload: payloadData
-                })
-            })
-            .then(response => console.log("Metricix Status:", response.status))
-            .catch(error => console.error("Metricix Error:", error));
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    }
+                }
+            }
         }
     </script>
+    <style>
+        /* Custom scrollbar for terminal */
+        .terminal-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .terminal-scroll::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1); 
+            border-radius: 4px;
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2); 
+            border-radius: 4px;
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3); 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+    <!-- Navbar -->
+    <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-8">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shadow-sm">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight">Metricix</span>
+                    </div>
+                    <div class="hidden sm:flex space-x-2">
+                        <a href="index.html" class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium text-gray-900 dark:text-white">Emitter</a>
+                        <a href="dashboard.html" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="theme-toggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <!-- Mobile Menu Placeholder -->
+                    <div class="sm:hidden flex items-center">
+                         <a href="dashboard.html" class="text-sm font-medium text-gray-600 dark:text-gray-300">Dashboard &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Event Emitter</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm md:text-base">Test your integration by sending events directly to the Metricix engine.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 relative overflow-hidden">
+                <form id="emitter-form" class="space-y-6 relative z-10">
+                    <div>
+                        <label for="api-key-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">X-API-Key</label>
+                        <select id="api-key-select" class="mt-1 block w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white cursor-pointer">
+                            <option value="mtx_pub_test_123">mtx_pub_test_123</option>
+                            <option value="mtx_pub_prod_999">mtx_pub_prod_999</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                        <input type="text" id="api-key-custom" placeholder="Enter custom API key" class="mt-2 hidden w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white">
+                        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Select an API key or enter a custom one.</p>
+                    </div>
+
+                    <!-- Mode Toggle -->
+                    <div class="pt-2">
+                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-full">
+                            <button type="button" id="mode-single" class="w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all">Single Request</button>
+                            <button type="button" id="mode-multiple" class="w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">Multiple Requests</button>
+                        </div>
+                    </div>
+
+                    <!-- Single Request Section -->
+                    <div id="section-single" class="pt-5 border-t border-gray-100 dark:border-gray-800/60">
+                        <label for="event-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
+                        <select id="event-type-select" class="mt-1 block w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white font-mono cursor-pointer">
+                            <option value="button_click">button_click</option>
+                            <option value="page_view">page_view</option>
+                            <option value="form_submit">form_submit</option>
+                            <option value="user_signup">user_signup</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                        <input type="text" id="event-type-custom" placeholder="custom_event_name" class="mt-2 hidden w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white font-mono">
+                    </div>
+
+                    <!-- Multiple Requests Section -->
+                    <div id="section-multiple" class="hidden pt-5 border-t border-gray-100 dark:border-gray-800/60 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Sequence <span class="text-xs text-gray-500 font-normal">(Up to 5)</span></label>
+                            <button type="button" id="btn-add-event" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">+ Add Event</button>
+                        </div>
+                        <div id="multiple-events-list" class="space-y-3">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Payload Section -->
+                    <div class="pt-5 border-t border-gray-100 dark:border-gray-800/60">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="payload" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Shared Payload (JSON)</label>
+                            <button type="button" id="format-json" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Format JSON</button>
+                        </div>
+                        <textarea id="payload" rows="6" required class="block w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-mono text-sm dark:text-white resize-y leading-relaxed" placeholder='{
+  "button_id": "signup_hero",
+  "path": "/home"
+}'>{
+  "button_id": "signup_hero",
+  "path": "/home"
+}</textarea>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="submit" id="send-btn" class="flex-grow flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all">
+                            Send Event
+                        </button>
+                        <button type="button" id="randomize-btn" class="hidden flex-grow justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all">
+                            Randomize & Send
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Terminal Section -->
+            <div class="bg-[#0D1117] rounded-xl shadow-xl border border-gray-800 flex flex-col overflow-hidden h-[500px] lg:h-auto font-mono">
+                <!-- Terminal Header -->
+                <div class="bg-[#161B22] px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-[#ff5f56] shadow-sm"></div>
+                        <div class="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-sm"></div>
+                        <div class="w-3 h-3 rounded-full bg-[#27c93f] shadow-sm"></div>
+                    </div>
+                    <span class="text-xs text-gray-400">Live Console Log</span>
+                    <button id="clear-log" class="text-xs text-gray-500 hover:text-white transition-colors">Clear</button>
+                </div>
+                <!-- Terminal Body -->
+                <div id="terminal" class="flex-grow p-5 overflow-y-auto text-sm terminal-scroll space-y-4">
+                    <div class="text-gray-500">Waiting for events...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme Toggle Logic
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+
+        function updateThemeIcons() {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+            } else {
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
+        }
+
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        updateThemeIcons();
+
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.setItem('color-theme', 'dark');
+            } else {
+                localStorage.setItem('color-theme', 'light');
+            }
+            updateThemeIcons();
+        });
+
+        // JSON formatter
+        const payloadInput = document.getElementById('payload');
+        document.getElementById('format-json').addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(payloadInput.value);
+                payloadInput.value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        });
+
+        // API Key Select Logic
+        const apiKeySelect = document.getElementById('api-key-select');
+        const apiKeyCustom = document.getElementById('api-key-custom');
+
+        apiKeySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                apiKeyCustom.classList.remove('hidden');
+                apiKeyCustom.required = true;
+            } else {
+                apiKeyCustom.classList.add('hidden');
+                apiKeyCustom.required = false;
+            }
+        });
+
+        // Event Type Single Logic
+        const eventTypeSelect = document.getElementById('event-type-select');
+        const eventTypeCustom = document.getElementById('event-type-custom');
+
+        eventTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                eventTypeCustom.classList.remove('hidden');
+                eventTypeCustom.required = true;
+            } else {
+                eventTypeCustom.classList.add('hidden');
+                eventTypeCustom.required = false;
+            }
+        });
+
+        // Mode Toggle Logic
+        let requestMode = 'single';
+        const modeSingleBtn = document.getElementById('mode-single');
+        const modeMultipleBtn = document.getElementById('mode-multiple');
+        const sectionSingle = document.getElementById('section-single');
+        const sectionMultiple = document.getElementById('section-multiple');
+        const sendBtn = document.getElementById('send-btn');
+        const randomizeBtn = document.getElementById('randomize-btn');
+
+        function updateMode(mode) {
+            requestMode = mode;
+            if (mode === 'single') {
+                modeSingleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
+                modeMultipleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
+                sectionSingle.classList.remove('hidden');
+                sectionMultiple.classList.add('hidden');
+                randomizeBtn.classList.add('hidden');
+                sendBtn.textContent = 'Send Event';
+            } else {
+                modeMultipleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
+                modeSingleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
+                sectionSingle.classList.add('hidden');
+                sectionMultiple.classList.remove('hidden');
+                randomizeBtn.classList.remove('hidden');
+                randomizeBtn.classList.add('flex');
+                sendBtn.textContent = 'Send Sequential';
+            }
+        }
+
+        modeSingleBtn.addEventListener('click', () => updateMode('single'));
+        modeMultipleBtn.addEventListener('click', () => updateMode('multiple'));
+
+        // Multiple Events Logic
+        const maxEvents = 5;
+        let multipleEvents = [{ type: 'button_click', custom: '', count: 1 }];
+        const eventOptions = ['button_click', 'page_view', 'form_submit', 'user_signup', 'custom'];
+
+        function renderMultipleEvents() {
+            const list = document.getElementById('multiple-events-list');
+            list.innerHTML = '';
+            
+            multipleEvents.forEach((ev, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex flex-col sm:flex-row sm:items-start gap-3 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-800';
+                
+                const selectWrapper = document.createElement('div');
+                selectWrapper.className = 'flex-grow w-full';
+
+                const typeSelect = document.createElement('select');
+                typeSelect.className = 'block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-mono focus:ring-blue-500 outline-none';
+                eventOptions.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt;
+                    o.textContent = opt === 'custom' ? 'Custom...' : opt;
+                    if (ev.type === opt) o.selected = true;
+                    typeSelect.appendChild(o);
+                });
+
+                const customInput = document.createElement('input');
+                customInput.type = 'text';
+                customInput.placeholder = 'custom_event_name';
+                customInput.className = `mt-2 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-mono focus:ring-blue-500 outline-none ${ev.type === 'custom' ? '' : 'hidden'}`;
+                customInput.value = ev.custom;
+
+                typeSelect.addEventListener('change', (e) => {
+                    multipleEvents[index].type = e.target.value;
+                    if (e.target.value === 'custom') {
+                        customInput.classList.remove('hidden');
+                    } else {
+                        customInput.classList.add('hidden');
+                    }
+                });
+
+                customInput.addEventListener('input', (e) => {
+                    multipleEvents[index].custom = e.target.value;
+                });
+
+                selectWrapper.appendChild(typeSelect);
+                selectWrapper.appendChild(customInput);
+
+                const countWrapper = document.createElement('div');
+                countWrapper.className = 'flex items-center gap-2';
+                
+                const countLabel = document.createElement('span');
+                countLabel.className = 'text-xs text-gray-500 dark:text-gray-400';
+                countLabel.textContent = 'Qty:';
+
+                const countInput = document.createElement('input');
+                countInput.type = 'number';
+                countInput.min = '1';
+                countInput.max = '100';
+                countInput.className = 'w-16 px-2 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 outline-none text-center';
+                countInput.value = ev.count;
+                countInput.addEventListener('change', (e) => {
+                    let val = parseInt(e.target.value, 10);
+                    if (isNaN(val) || val < 1) val = 1;
+                    multipleEvents[index].count = val;
+                    countInput.value = val;
+                });
+
+                countWrapper.appendChild(countLabel);
+                countWrapper.appendChild(countInput);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'mt-1 sm:mt-0 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed';
+                removeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                removeBtn.disabled = multipleEvents.length <= 1;
+                removeBtn.addEventListener('click', () => {
+                    multipleEvents.splice(index, 1);
+                    renderMultipleEvents();
+                });
+
+                row.appendChild(selectWrapper);
+                row.appendChild(countWrapper);
+                row.appendChild(removeBtn);
+                list.appendChild(row);
+            });
+            
+            document.getElementById('btn-add-event').style.display = multipleEvents.length >= maxEvents ? 'none' : 'block';
+        }
+
+        document.getElementById('btn-add-event').addEventListener('click', () => {
+            if (multipleEvents.length < maxEvents) {
+                multipleEvents.push({ type: 'button_click', custom: '', count: 1 });
+                renderMultipleEvents();
+            }
+        });
+
+        renderMultipleEvents();
+
+        // Terminal Logging
+        const terminal = document.getElementById('terminal');
+        const clearLogBtn = document.getElementById('clear-log');
+        let isFirstLog = true;
+
+        function appendLog(type, message, details = null) {
+            if (isFirstLog) {
+                terminal.innerHTML = '';
+                isFirstLog = false;
+            }
+
+            const logEntry = document.createElement('div');
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            
+            let colorClass = 'text-[#58a6ff]'; // blue
+            if (type === 'error') colorClass = 'text-[#f85149]'; // red
+            if (type === 'success') colorClass = 'text-[#3fb950]'; // green
+            if (type === 'request') colorClass = 'text-[#bc8cff]'; // purple
+            if (type === 'info') colorClass = 'text-gray-400';
+
+            let logHTML = `<div><span class="text-gray-500">[${time}]</span> <span class="${colorClass}">${message}</span></div>`;
+            
+            if (details) {
+                let formattedDetails = typeof details === 'string' ? details : JSON.stringify(details, null, 2);
+                logHTML += `<pre class="mt-2 ml-4 p-3 bg-[#161B22] border border-gray-800 rounded-md text-gray-300 text-xs overflow-x-auto leading-relaxed shadow-inner">${formattedDetails}</pre>`;
+            }
+
+            logEntry.innerHTML = logHTML;
+            terminal.appendChild(logEntry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        clearLogBtn.addEventListener('click', () => {
+            terminal.innerHTML = '<div class="text-gray-500">Waiting for events...</div>';
+            isFirstLog = true;
+        });
+
+        // Form Submission Logic
+        const form = document.getElementById('emitter-form');
+        
+        async function sendSingleRequest(eventType, payloadObj, apiKey) {
+            const requestBody = {
+                event_type: eventType,
+                payload: payloadObj
+            };
+
+            appendLog('request', `> POST /api/v1/track (${eventType})`, requestBody);
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/track', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                let responseData;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    responseData = await response.json();
+                } else {
+                    responseData = await response.text();
+                }
+
+                if (response.ok) {
+                    appendLog('success', `< ${response.status} ${response.statusText}`, responseData);
+                } else {
+                    appendLog('error', `< ${response.status} ${response.statusText}`, responseData);
+                }
+            } catch (error) {
+                appendLog('error', '< Network Error or CORS Issue', error.message);
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        async function processSubmission(isRandomized = false) {
+            const apiKey = apiKeySelect.value === 'custom' ? apiKeyCustom.value.trim() : apiKeySelect.value;
+            let payloadObj = {};
+            
+            try {
+                payloadObj = JSON.parse(payloadInput.value);
+            } catch(e) {
+                appendLog('error', 'Failed to parse Payload as JSON', e.message);
+                return;
+            }
+
+            let eventsToSend = [];
+
+            if (requestMode === 'single') {
+                const type = eventTypeSelect.value === 'custom' ? eventTypeCustom.value.trim() : eventTypeSelect.value;
+                if (!type) {
+                    alert("Please specify an event type.");
+                    return;
+                }
+                eventsToSend.push(type);
+            } else {
+                for (const ev of multipleEvents) {
+                    const type = ev.type === 'custom' ? ev.custom.trim() : ev.type;
+                    if (!type) continue;
+                    for (let i = 0; i < ev.count; i++) {
+                        eventsToSend.push(type);
+                    }
+                }
+            }
+
+            if (eventsToSend.length === 0) {
+                alert("No events configured to send.");
+                return;
+            }
+
+            if (isRandomized) {
+                eventsToSend = shuffleArray([...eventsToSend]);
+                appendLog('info', `Randomizing ${eventsToSend.length} events...`);
+            } else if (eventsToSend.length > 1) {
+                appendLog('info', `Sending ${eventsToSend.length} events sequentially...`);
+            }
+
+            // Disable UI
+            const originalSendText = sendBtn.textContent;
+            const originalRandText = randomizeBtn.textContent;
+            sendBtn.disabled = true;
+            randomizeBtn.disabled = true;
+            sendBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            randomizeBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            sendBtn.textContent = 'Sending...';
+
+            // Send loop
+            for (const [index, type] of eventsToSend.entries()) {
+                await sendSingleRequest(type, payloadObj, apiKey);
+                // Optional slight delay so terminal isn't totally synchronous
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            if (eventsToSend.length > 1) {
+                appendLog('info', `Finished sending ${eventsToSend.length} events.`);
+            }
+
+            // Restore UI
+            sendBtn.disabled = false;
+            randomizeBtn.disabled = false;
+            sendBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            randomizeBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            sendBtn.textContent = originalSendText;
+            randomizeBtn.textContent = originalRandText;
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            processSubmission(false);
+        });
+
+        randomizeBtn.addEventListener('click', () => {
+            processSubmission(true);
+        });
+    </script>
 </body>
 </html>

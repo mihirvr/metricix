@@ -185,24 +185,30 @@ The rate limiter **MUST** execute in the `WebFilter` chain **before** payload va
 
 ---
 
-## FR-7: Dashboard Visualization
+## FR-7: Administrative Dashboard (UI)
+The system **MUST** provide a web-based dashboard (`dashboard.html`) that:
+1. Automatically populates available tenants via `GET /api/v1/tenants`.
+2. Visualizes data using both Bar Charts (categorical volume) and Line Charts (time-series).
+3. Supports dynamic time-series binning (hourly/daily) and chart interaction (zoom/pan).
+4. Displays the 50 most recent events in a tabular format with formatted JSON payloads.
+5. Provides a confirmation-gated UI to trigger the `DELETE /api/v1/purge` endpoint.
 
-### FR-7.1 — User Interface
-The system **MUST** provide a browser-based graphical user interface (GUI) served from the `frontend/` directory.
-
-### FR-7.2 — Data Representation
-The GUI **MUST** render a bar chart visualizing the total count of events, grouped by `event_type`, over a configurable time window. The chart **MUST** update in near real-time by polling the `/api/v1/events` endpoint.
+## FR-8: Testing & Emulation Portal (UI)
+The system **MUST** provide a developer testing tool (`index.html`) that:
+1. Allows single and multi-request (batch) queueing of event payloads.
+2. Supports randomized traffic execution to simulate chaotic client behavior.
+3. Provides a live, terminal-style UI to display HTTP request/response logs.
 
 ---
 
-## FR-8: Soft-Delete Protocol
+## FR-9: Soft-Delete Protocol
 
-### FR-8.1 — Archival Endpoint
+### FR-9.1 — Archival Endpoint
 The system **MUST** provide an endpoint for data archival:
 
 ```
 DELETE /api/v1/purge
 ```
 
-### FR-8.2 — Logical Deletion
+### FR-9.2 — Logical Deletion
 This operation **MUST NOT** physically delete rows from the `metricix_events` table. Instead, it **MUST** execute a bulk `UPDATE` statement that sets the `is_deleted` flag to `true` for all records associated with the `tenant_id` of the provided `X-API-Key`. This ensures data is hidden from query APIs but remains recoverable.

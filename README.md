@@ -43,7 +43,24 @@ Built natively on **Spring WebFlux (Project Reactor)**, every operation in the i
 - **Prometheus metrics** — Custom ingestion counters and batch size histograms out of the box.
 - **Structured JSON logging** — Compatible with Datadog, ELK, and Grafana Loki.
 - **Flyway schema management** — Schema is provisioned automatically on startup; no manual DDL.
+---
+## 🖥️ User Interface (Frontend Portals)
 
+Metricix includes a premium, Tailwind-styled frontend suite consisting of two dedicated portals, featuring persistent Light/Dark mode and responsive design.
+
+### 1. The Developer Emitter (`index.html`)
+A robust testing portal designed to simulate real-world traffic patterns without needing Postman or external scripts.
+* **Traffic Simulation:** Queue up to 5 different event types with specific quantities.
+* **Execution Modes:** Fire events sequentially or shuffle them into randomized chaotic traffic.
+* **Smart Inputs:** Dropdown presets for API keys and event types with seamless custom input fallbacks.
+* **Live Console:** A built-in stylized terminal logging request/response cycles in real-time.
+
+### 2. The Analytics Hub (`dashboard.html`)
+An administrative dashboard for visualizing telemetry streams dynamically.
+* **Automated Discovery:** Automatically fetches available tenants and binds required API keys.
+* **Interactive Visualization:** Powered by Chart.js. Features Bar Charts (Event Volume) and Line Charts (Time Series).
+* **Deep Data Exploration:** Supports mouse-wheel zooming, click-and-drag panning, and dynamic time-binning (Per Hour vs. Per Day).
+* **The Danger Zone:** UI-driven soft-deletion with confirmation modals for safe tenant purging.
 ---
 ## ⚡ Performance Benchmarks
 

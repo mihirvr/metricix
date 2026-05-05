@@ -105,14 +105,13 @@ PostgreSQL schema is provisioned automatically on startup. No manual DDL.
 
 ---
 
-### 9. Real-time Dashboard
-
-A Chart.js-powered frontend to visualize event volume by type.
-
+### 9. Frontend Analytics & Emulation Suite
+A comprehensive, lightweight HTML/JS frontend built with Tailwind CSS and Chart.js.
 **Success criteria:**
-- Connects to the `/api/v1/events` endpoint to fetch data.
-- Displays a time-series chart showing event counts grouped by `event_type`.
-- UI is served from the `frontend/` directory.
+- Includes an Event Emitter capable of randomized batch traffic simulation.
+- Includes an Analytics Hub with zoomable/pannable time-series and categorical charts.
+- Supports persistent Dark/Light mode caching via `localStorage`.
+- Safely manages tenant discovery and data purging.
 
 ---
 

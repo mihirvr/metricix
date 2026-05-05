@@ -1,167 +1,657 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metricix | Dynamic Analytics</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-        .controls { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
-        select { padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; min-width: 250px; }
-        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #2980b9; }
-        .chart-container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e9ecef; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; color: #2c3e50; }
-        .payload-cell { font-family: monospace; font-size: 0.85em; background: #fdfdfd; color: #666; border: 1px solid #eee; padding: 5px; border-radius: 4px; }
-        .badge { background: #e8f4fd; color: #3498db; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>🚀 Metricix Analytics</h1>
+    <title>Metricix - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <div class="controls">
-        <div>
-            <label for="tenant-select" style="margin-right: 10px;">Active Tenant:</label>
-            <select id="tenant-select" onchange="fetchEvents()">
-                <option value="">Searching for tenants...</option>
-            </select>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="loadTenants()">🔄 Refresh Tenant List</button>
-            <button onclick="fetchEvents()" style="background: #2ecc71;">⚡ Update Data</button>
-        </div>
-    </div>
+    <!-- Chart.js & Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
-    <div class="chart-container">
-        <canvas id="trafficChart" height="80"></canvas>
-    </div>
-
-    <h3>Recent Event Log</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Time Received</th>
-                <th>Event Type</th>
-                <th>Source URL</th>
-                <th>Payload Data</th>
-            </tr>
-        </thead>
-        <tbody id="event-table-body">
-            <tr><td colspan="4" style="text-align: center;">Loading data...</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<script>
-    const BASE_URL = 'http://localhost:8080/api/v1';
-    let myChart = null;
-
-    // 1. DISCOVER TENANTS FROM POSTGRES
-    function loadTenants() {
-        const select = document.getElementById('tenant-select');
-        
-        fetch(`${BASE_URL}/tenants`)
-            .then(res => res.json())
-            .then(tenants => {
-                const previousValue = select.value;
-                select.innerHTML = ''; 
-
-                if (tenants.length === 0) {
-                    select.innerHTML = '<option value="">No Active Tenants Found</option>';
-                    return;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    }
                 }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+    <!-- Navbar -->
+    <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-8">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shadow-sm">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight">Metricix</span>
+                    </div>
+                    <div class="hidden sm:flex space-x-2">
+                        <a href="index.html" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Emitter</a>
+                        <a href="dashboard.html" class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium text-gray-900 dark:text-white">Dashboard</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="theme-toggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <!-- Mobile Menu Placeholder -->
+                    <div class="sm:hidden flex items-center">
+                         <a href="index.html" class="text-sm font-medium text-gray-600 dark:text-gray-300">&larr; Emitter</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-                tenants.forEach(id => {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = id; 
-                    select.appendChild(option);
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header & Controls -->
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Analytics Hub</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm md:text-base">Visualize and manage your event streams across tenants.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                <div class="relative w-full sm:w-56">
+                    <select id="tenant-select" class="appearance-none block w-full pl-3 pr-10 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm dark:text-white cursor-pointer transition-colors">
+                        <option value="" disabled selected>Loading tenants...</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+                
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="admin-api-key" placeholder="Enter API Key to fetch..." class="block w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm dark:text-white font-mono transition-colors">
+                </div>
+                
+                <button id="fetch-data-btn" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900">
+                    Load Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Chart Section -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 flex flex-col relative">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4 z-10 relative">
+                    <div class="flex items-center gap-3">
+                        <div class="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white" id="chart-title">Event Volume by Type</h2>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative hidden" id="time-bin-container">
+                            <select id="time-bin-select" class="appearance-none pl-3 pr-8 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="hour">Per Hour</option>
+                                <option value="day" selected>Per Day</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                            <button id="btn-chart-bar" class="px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all">Bar</button>
+                            <button id="btn-chart-line" class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">Line</button>
+                        </div>
+                        <button id="btn-reset-zoom" class="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Reset Zoom (Double Click Chart)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow relative h-64 md:h-80 w-full mt-2" style="position: relative; z-index: 0;">
+                    <canvas id="eventsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">Soft delete all data for the currently selected tenant. This action will purge all associated events immediately and cannot be undone.</p>
+                </div>
+                <button id="purge-btn" class="w-full py-2.5 px-4 border border-red-500 text-red-600 dark:text-red-400 bg-transparent rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                    Purge Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Events</h2>
+                </div>
+                <span id="event-count-badge" class="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm">0 events</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <thead class="bg-gray-50 dark:bg-gray-950/50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4">Timestamp</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4">Event Type</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/2">Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table-body" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                        <tr>
+                            <td colspan="3" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center">
+                                    <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Enter API key and load data to view events.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal (Hidden by default) -->
+    <div id="purge-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900/50 dark:bg-black/50 transition-opacity backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-200 dark:border-gray-800">
+                    <div class="bg-white dark:bg-gray-900 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white" id="modal-title">Purge Tenant Data</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Are you sure you want to purge all data for this tenant? This action cannot be undone.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-950 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-200 dark:border-gray-800">
+                        <button type="button" id="confirm-purge-btn" class="inline-flex w-full justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">Purge Data</button>
+                        <button type="button" id="cancel-purge-btn" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:ring-offset-2 dark:focus:ring-offset-gray-900">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let currentEvents = [];
+        let chartMode = 'bar'; // 'bar' | 'line'
+        let timeBin = 'day'; // 'day' | 'hour'
+        let chartInstance = null;
+
+        // UI Elements
+        const btnBar = document.getElementById('btn-chart-bar');
+        const btnLine = document.getElementById('btn-chart-line');
+        const timeBinContainer = document.getElementById('time-bin-container');
+        const timeBinSelect = document.getElementById('time-bin-select');
+        const chartTitle = document.getElementById('chart-title');
+        const btnResetZoom = document.getElementById('btn-reset-zoom');
+
+        // Theme Toggle Logic
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+
+        function updateThemeIcons() {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+                updateChartTheme(true);
+            } else {
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+                updateChartTheme(false);
+            }
+        }
+
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+            updateThemeIcons();
+        });
+
+        // Chart.js Setup
+        const ctx = document.getElementById('eventsChart').getContext('2d');
+        
+        function initChart() {
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+            const textColor = isDark ? '#9ca3af' : '#6b7280';
+            const primaryColor = isDark ? '#60a5fa' : '#3b82f6'; // Blue-400 (dark mode) / Blue-500 (light mode)
+            const hoverColor = isDark ? '#93c5fd' : '#2563eb';   // Blue-300 / Blue-600
+
+            // Configuration changes based on mode
+            const isLine = chartMode === 'line';
+
+            chartInstance = new Chart(ctx, {
+                type: isLine ? 'line' : 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: isLine ? 'Total Activities' : 'Event Volume',
+                        data: [],
+                        backgroundColor: isLine ? (isDark ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)') : primaryColor,
+                        borderColor: primaryColor,
+                        borderWidth: isLine ? 2 : 0,
+                        borderRadius: isLine ? 0 : 6,
+                        barPercentage: 0.5,
+                        hoverBackgroundColor: isLine ? primaryColor : hoverColor,
+                        fill: isLine,
+                        tension: 0.3,
+                        pointBackgroundColor: primaryColor,
+                        pointRadius: isLine ? 3 : 0,
+                        pointHoverRadius: isLine ? 6 : 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 500 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                            titleColor: isDark ? '#ffffff' : '#000000',
+                            bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                            borderColor: isDark ? '#374151' : '#e5e7eb',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            cornerRadius: 8,
+                            titleFont: { family: "'Inter', sans-serif", size: 13 },
+                            bodyFont: { family: "'Inter', sans-serif", size: 14, weight: 'bold' }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'ctrl',
+                            },
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                drag: { enabled: true, backgroundColor: 'rgba(59, 130, 246, 0.2)' },
+                                mode: 'x',
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor, drawBorder: false },
+                            ticks: { color: textColor, precision: 0, font: { family: "'Inter', sans-serif" }, padding: 10 },
+                            border: { display: false }
+                        },
+                        x: {
+                            type: isLine ? 'time' : 'category',
+                            time: isLine ? {
+                                unit: timeBin,
+                                displayFormats: {
+                                    hour: 'MMM d, HH:mm',
+                                    day: 'MMM d, yyyy'
+                                },
+                                tooltipFormat: timeBin === 'hour' ? 'MMM d, yyyy HH:mm' : 'MMM d, yyyy'
+                            } : undefined,
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: textColor, font: { family: "'Inter', sans-serif" }, padding: 10 },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Double click to reset zoom
+            ctx.canvas.ondblclick = () => chartInstance.resetZoom();
+        }
+
+        function updateChartTheme(isDark) {
+            if (!chartInstance) return;
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+            const textColor = isDark ? '#9ca3af' : '#6b7280';
+            const primaryColor = isDark ? '#60a5fa' : '#3b82f6';
+            const hoverColor = isDark ? '#93c5fd' : '#2563eb';
+            const isLine = chartMode === 'line';
+
+            chartInstance.data.datasets[0].backgroundColor = isLine ? (isDark ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)') : primaryColor;
+            chartInstance.data.datasets[0].borderColor = primaryColor;
+            chartInstance.data.datasets[0].pointBackgroundColor = primaryColor;
+            chartInstance.data.datasets[0].hoverBackgroundColor = isLine ? primaryColor : hoverColor;
+
+            chartInstance.options.scales.y.grid.color = gridColor;
+            chartInstance.options.scales.y.ticks.color = textColor;
+            chartInstance.options.scales.x.ticks.color = textColor;
+            chartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
+            chartInstance.options.plugins.tooltip.titleColor = isDark ? '#ffffff' : '#000000';
+            chartInstance.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#4b5563';
+            chartInstance.options.plugins.tooltip.borderColor = isDark ? '#374151' : '#e5e7eb';
+            chartInstance.update();
+        }
+
+        initChart();
+        updateThemeIcons();
+
+        // View Toggles
+        function setChartMode(mode) {
+            chartMode = mode;
+            if (mode === 'bar') {
+                btnBar.className = 'px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
+                btnLine.className = 'px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
+                timeBinContainer.classList.add('hidden');
+                chartTitle.textContent = 'Event Volume by Type';
+            } else {
+                btnLine.className = 'px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
+                btnBar.className = 'px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
+                timeBinContainer.classList.remove('hidden');
+                chartTitle.textContent = 'Total Activities';
+            }
+            initChart();
+            processChartData();
+        }
+
+        btnBar.addEventListener('click', () => setChartMode('bar'));
+        btnLine.addEventListener('click', () => setChartMode('line'));
+        timeBinSelect.addEventListener('change', (e) => {
+            timeBin = e.target.value;
+            initChart();
+            processChartData();
+        });
+        btnResetZoom.addEventListener('click', () => {
+            if (chartInstance) chartInstance.resetZoom();
+        });
+
+        // API Interactions
+        const BASE_URL = 'http://localhost:8080/api/v1';
+        const tenantSelect = document.getElementById('tenant-select');
+        const apiKeyInput = document.getElementById('admin-api-key');
+        const fetchDataBtn = document.getElementById('fetch-data-btn');
+        const tableBody = document.getElementById('events-table-body');
+        const eventCountBadge = document.getElementById('event-count-badge');
+        
+        const purgeBtn = document.getElementById('purge-btn');
+        const purgeModal = document.getElementById('purge-modal');
+        const confirmPurgeBtn = document.getElementById('confirm-purge-btn');
+        const cancelPurgeBtn = document.getElementById('cancel-purge-btn');
+
+        async function loadTenants() {
+            try {
+                const response = await fetch(`${BASE_URL}/tenants`);
+                if (response.ok) {
+                    const tenants = await response.json();
+                    tenantSelect.innerHTML = '<option value="" disabled selected>Select a tenant...</option>';
+                    if (Array.isArray(tenants) && tenants.length > 0) {
+                        tenants.forEach(t => {
+                            const opt = document.createElement('option');
+                            opt.value = t.id || t.tenant_id || t;
+                            opt.textContent = t.name || t.tenant_id || t;
+                            tenantSelect.appendChild(opt);
+                        });
+                    } else {
+                        tenantSelect.innerHTML = '<option value="" disabled selected>No tenants found</option>';
+                    }
+                } else {
+                    tenantSelect.innerHTML = '<option value="" disabled selected>Failed to load tenants</option>';
+                }
+            } catch (e) {
+                console.error('Error fetching tenants', e);
+                tenantSelect.innerHTML = '<option value="" disabled selected>Failed to connect to API</option>';
+            }
+        }
+        
+        loadTenants();
+
+        tenantSelect.addEventListener('change', () => {
+            if (tenantSelect.value) {
+                apiKeyInput.value = tenantSelect.value;
+                apiKeyInput.focus();
+            }
+        });
+
+        fetchDataBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter an API Key to load data.');
+                return;
+            }
+            
+            const originalBtnText = fetchDataBtn.textContent;
+            fetchDataBtn.textContent = 'Loading...';
+            fetchDataBtn.disabled = true;
+            fetchDataBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            try {
+                const response = await fetch(`${BASE_URL}/events`, {
+                    headers: { 'X-API-Key': apiKey }
                 });
 
-                // Restore selection or default to first
-                if (previousValue && tenants.includes(previousValue)) {
-                    select.value = previousValue;
+                if (response.ok) {
+                    const data = await response.json();
+                    currentEvents = data.events || data || [];
+                    renderData(currentEvents);
+                } else {
+                    const txt = await response.text();
+                    alert(`Failed to fetch data: ${response.status} ${response.statusText}\n${txt}`);
                 }
-                
-                fetchEvents(); 
-            })
-            .catch(err => {
-                console.error("Tenant Discovery Error:", err);
-                select.innerHTML = '<option value="">Engine Offline</option>';
-            });
-    }
+            } catch (e) {
+                alert(`Error fetching events: Network request failed or CORS issue.`);
+            } finally {
+                fetchDataBtn.textContent = originalBtnText;
+                fetchDataBtn.disabled = false;
+                fetchDataBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        });
 
-    // 2. FETCH DATA FOR SELECTED TENANT
-    function fetchEvents() {
-        const tableBody = document.getElementById('event-table-body');
-        const selectedTenant = document.getElementById('tenant-select').value;
-        
-        if (!selectedTenant) return;
-
-        fetch(`${BASE_URL}/events?limit=50`, {
-            method: 'GET',
-            headers: { 'X-API-Key': selectedTenant }
-        })
-        .then(res => res.json())
-        .then(events => {
-            tableBody.innerHTML = ''; 
-            
-            if (events.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No data logged yet.</td></tr>';
-                updateChart({});
+        function processChartData() {
+            if (!currentEvents || currentEvents.length === 0) {
+                chartInstance.data.labels = [];
+                chartInstance.data.datasets[0].data = [];
+                chartInstance.update();
                 return;
             }
 
-            const eventCounts = {};
-            events.forEach(event => {
-                const date = new Date(event.created_at);
-                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            if (chartMode === 'bar') {
+                const typeCounts = {};
+                currentEvents.forEach(e => {
+                    const type = e.event_type || e.type || 'unknown';
+                    typeCounts[type] = (typeCounts[type] || 0) + 1;
+                });
+                const sortedTypes = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a]);
+                chartInstance.data.labels = sortedTypes;
+                chartInstance.data.datasets[0].data = sortedTypes.map(t => typeCounts[t]);
+            } else {
+                // Line chart logic - time binning
+                const timeCounts = {};
+                currentEvents.forEach(e => {
+                    const d = new Date(e.timestamp || e.created_at || Date.now());
+                    if (isNaN(d)) return;
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${timeStr}</td>
-                    <td><span class="badge">${event.event_type}</span></td>
-                    <td>${event.url ? event.url.split('/').pop().substring(0, 20) : 'N/A'}</td>
-                    <td class="payload-cell">${JSON.stringify(event.payload)}</td>
-                `;
-                tableBody.appendChild(row);
+                    let key;
+                    if (timeBin === 'hour') {
+                        // Truncate to hour
+                        d.setMinutes(0, 0, 0);
+                        key = d.getTime();
+                    } else {
+                        // Truncate to day
+                        d.setHours(0, 0, 0, 0);
+                        key = d.getTime();
+                    }
+                    timeCounts[key] = (timeCounts[key] || 0) + 1;
+                });
 
-                eventCounts[event.event_type] = (eventCounts[event.event_type] || 0) + 1;
+                const sortedTimes = Object.keys(timeCounts).map(Number).sort((a, b) => a - b);
+                
+                chartInstance.data.labels = sortedTimes;
+                chartInstance.data.datasets[0].data = sortedTimes.map(t => ({ x: t, y: timeCounts[t] }));
+            }
+            chartInstance.update();
+        }
+
+        function renderData(events) {
+            eventCountBadge.textContent = `${events.length} event${events.length !== 1 ? 's' : ''}`;
+            
+            processChartData();
+
+            tableBody.innerHTML = '';
+            
+            if (events.length === 0) {
+                tableBody.innerHTML = `<tr>
+                    <td colspan="3" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">No events found for this tenant.</span>
+                        </div>
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            const sortedEvents = [...events].sort((a, b) => {
+                const dateA = new Date(a.timestamp || a.created_at || 0);
+                const dateB = new Date(b.timestamp || b.created_at || 0);
+                return dateB - dateA;
             });
 
-            updateChart(eventCounts);
+            const displayEvents = sortedEvents.slice(0, 50);
+
+            displayEvents.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors';
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono';
+                const date = new Date(e.timestamp || e.created_at);
+                timeCell.textContent = isNaN(date) ? (e.timestamp || 'N/A') : date.toLocaleString('en-US', { hour12: false });
+                
+                const typeCell = document.createElement('td');
+                typeCell.className = 'px-6 py-4 whitespace-nowrap text-sm font-medium';
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-mono text-gray-700 dark:text-gray-300 shadow-sm';
+                typeSpan.textContent = e.event_type || e.type || 'N/A';
+                typeCell.appendChild(typeSpan);
+
+                const payloadCell = document.createElement('td');
+                payloadCell.className = 'px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono';
+                const payloadStr = typeof e.payload === 'object' ? JSON.stringify(e.payload) : e.payload;
+                
+                const codeBlock = document.createElement('code');
+                codeBlock.className = 'px-2 py-1 bg-gray-50 dark:bg-gray-950 rounded border border-gray-200 dark:border-gray-800 text-xs truncate block max-w-sm lg:max-w-md xl:max-w-lg';
+                codeBlock.textContent = payloadStr || '{}';
+                codeBlock.title = payloadStr;
+
+                payloadCell.appendChild(codeBlock);
+
+                tr.appendChild(timeCell);
+                tr.appendChild(typeCell);
+                tr.appendChild(payloadCell);
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Purge functionality
+        purgeBtn.addEventListener('click', () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter an API Key before attempting to purge data.');
+                apiKeyInput.focus();
+                return;
+            }
+            purgeModal.classList.remove('hidden');
         });
-    }
 
-    // 3. DRAW CHART
-    function updateChart(dataCounts) {
-        const ctx = document.getElementById('trafficChart').getContext('2d');
-        if (myChart) myChart.destroy();
-
-        myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(dataCounts),
-                datasets: [{
-                    label: 'Event Volume',
-                    data: Object.values(dataCounts),
-                    backgroundColor: '#3498db',
-                    borderRadius: 5
-                }]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        cancelPurgeBtn.addEventListener('click', () => {
+            purgeModal.classList.add('hidden');
         });
-    }
 
-    window.onload = loadTenants;
-</script>
+        purgeModal.addEventListener('click', (e) => {
+            if (e.target === purgeModal.querySelector('.fixed.inset-0.z-10')) {
+                purgeModal.classList.add('hidden');
+            }
+        });
 
+        confirmPurgeBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            confirmPurgeBtn.disabled = true;
+            confirmPurgeBtn.textContent = 'Purging...';
+            confirmPurgeBtn.classList.add('opacity-75');
+
+            try {
+                const response = await fetch(`${BASE_URL}/purge`, {
+                    method: 'DELETE',
+                    headers: { 'X-API-Key': apiKey }
+                });
+
+                if (response.ok) {
+                    currentEvents = [];
+                    processChartData();
+                    
+                    tableBody.innerHTML = `<tr>
+                        <td colspan="3" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="w-8 h-8 text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Data purged successfully.</span>
+                            </div>
+                        </td>
+                    </tr>`;
+                    eventCountBadge.textContent = '0 events';
+                    
+                    purgeModal.classList.add('hidden');
+                    await loadTenants();
+                    
+                } else {
+                    const text = await response.text();
+                    alert(`Failed to purge data: ${response.status} ${response.statusText}\n${text}`);
+                    purgeModal.classList.add('hidden');
+                }
+            } catch (e) {
+                alert(`Error during purge request: Network error or CORS issue.`);
+                purgeModal.classList.add('hidden');
+            } finally {
+                confirmPurgeBtn.disabled = false;
+                confirmPurgeBtn.textContent = 'Purge Data';
+                confirmPurgeBtn.classList.remove('opacity-75');
+            }
+        });
+    </script>
 </body>
 </html>
