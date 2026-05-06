@@ -1,0 +1,1 @@
+ALTER TABLE metricix_events ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;

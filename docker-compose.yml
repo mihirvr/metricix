@@ -1,15 +1,60 @@
-version: '3.8'
 services:
+  # 1. The Redis Event Buffer & Rate Limiter
   redis:
     image: redis:7-alpine
+    container_name: metricix-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
+  # 2. The PostgreSQL Persistent Store
   postgres:
     image: postgres:16-alpine
+    container_name: metricix-postgres
+    restart: unless-stopped
     environment:
+      POSTGRES_DB: metricix_db
       POSTGRES_USER: metricix_admin
       POSTGRES_PASSWORD: super_secret_password_123
-      POSTGRES_DB: metricix_db
     ports:
-      - "5433:5432"
+      - "5433:5432" # Mapping to 5433 to avoid conflicts if you have local Postgres
+    volumes:
+      - metricix_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metricix_admin -d metricix_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 3. The Spring WebFlux Engine
+  api:
+    build: 
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: metricix-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # We use the internal Docker network names (postgres, redis) instead of localhost
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/metricix_db
+      SPRING_R2DBC_USERNAME: metricix_admin
+      SPRING_R2DBC_PASSWORD: super_secret_password_123
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/metricix_db
+      SPRING_FLYWAY_USER: metricix_admin
+      SPRING_FLYWAY_PASSWORD: super_secret_password_123
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+volumes:
+  metricix_data:

@@ -31,3 +31,4 @@ Thumbs.db
 frontend/node_modules/
 *.log
 temp/
+/metricix_key/
