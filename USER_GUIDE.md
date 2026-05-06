@@ -65,15 +65,5 @@ For direct integration, developers can hit the Metricix engine at `https://api.m
 Here is a copy-pasteable example for sending a `button_click` event.
 
 ```bash
-curl -s -X POST https://api.mihirr.in/api/v1/track \
-  -H "X-API-Key: mtx_pub_your_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "button_click",
-    "url": "https://myapp.com/pricing",
-    "payload": {
-      "button_id": "cta_upgrade",
-      "user_id": "usr_a4f92"
-    }
-  }'
+curl -X POST https://api.mihirr.in/api/v1/track -H "Content-Type: application/json" -H "X-API-Key: mtx_pub_test_123" -d "{\"event_type\": \"terminal_test\", \"payload\": {\"message\": \"Hello from the command line!\", \"engineer\": \"Mihir\", \"status\": \"success\"}}"
 ```
