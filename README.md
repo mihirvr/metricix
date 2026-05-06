@@ -3,15 +3,22 @@
 # ⚡ Metricix 
 ### (pronounced: meh-TRIK-iks)
 
+🔴 **Live Portal:** [https://metricix.mihirr.in](https://metricix.mihirr.in)
+<br>
+📖 **Read the [User Guide](USER_GUIDE.md)** for UI instructions and API documentation.
+
 ### High-Performance, Self-Hosted Telemetry & Event Analytics Engine
 
-[![Java](https://img.shields.io/badge/Java-21%20LTS-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
+[![Java](https://img.shields.io/badge/Java-24-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2+-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![AWS EC2](https://img.shields.io/badge/AWS-EC2-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/ec2/)
-
+[![Nginx](https://img.shields.io/badge/Nginx-Proxy-269539?style=flat-square&logo=nginx&logoColor=white)](https://www.nginx.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Edge-black?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Chart.js](https://img.shields.io/badge/Chart.js--FF6384?style=flat-square&logo=chart.js&logoColor=white)](https://www.chartjs.org/)
 
 **P95 Latency &lt; 15ms &nbsp;|&nbsp; &gt; 1,000 req/sec on 1 vCPU &nbsp;|&nbsp; Zero Silent Data Loss**
 
@@ -25,6 +32,18 @@
 Metricix is a **self-hosted, non-blocking telemetry ingestion and analytics engine** built for engineering teams that need full data ownership, predictable latency, and high throughput — without the cost or lock-in of third-party analytics platforms.
 
 Built natively on **Spring WebFlux (Project Reactor)**, every operation in the ingestion path is fully asynchronous. Incoming events are immediately buffered in **Redis** and flushed to **PostgreSQL** in bulk by a background worker — decoupling API response time from database write performance entirely. The system now includes a real-time dashboard to visualize event data as it arrives.
+
+---
+
+## ☁️ Cloud Architecture
+
+The Metricix engine is deployed in a decoupled, scalable cloud architecture for production-grade reliability and performance.
+
+- **Backend Services (AWS EC2):** The core backend services (Spring Boot API, PostgreSQL, Redis) are containerized using Docker and run on a dedicated AWS EC2 instance.
+- **Secure API Gateway (Nginx):** An Nginx reverse proxy is deployed on the same EC2 instance, serving as the public-facing gateway. It terminates SSL/TLS, provides HTTPS for the API endpoint (`api.mihirr.in`), and forwards traffic to the Spring Boot application.
+- **Frontend Hosting (Vercel):** The frontend dashboard is a decoupled static application hosted on Vercel's global Edge Network. This ensures fast load times for users worldwide and separates the UI from the backend infrastructure.
+
+This architecture ensures that the backend is securely isolated, while the frontend is globally distributed for optimal user experience.
 
 ---
 
@@ -141,7 +160,7 @@ Instead of spamming the server as fast as possible (which tests network bridge l
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Runtime | Java 21 (LTS) | Virtual threads available |
+| Runtime | Java 24 | Virtual threads available |
 | Framework | Spring Boot 3.2+ | WebFlux, Actuator, Scheduling |
 | Reactive Web | Spring WebFlux (Project Reactor) | Netty server, non-blocking throughout |
 | Cache / Queue | Redis 7+ | Event buffer, rate limit state, DLQ |
@@ -215,7 +234,7 @@ Ingests a single event. Returns immediately after buffering to Redis.
 
 ```http
 POST /api/v1/track HTTP/1.1
-Host: localhost:8080
+Host: api.mihirr.in
 X-API-Key: mtx_pub_8f92a4b1c
 Content-Type: application/json
 
@@ -259,7 +278,7 @@ Content-Type: application/json
 **cURL Example**
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/track \
+curl -s -X POST https://api.mihirr.in/api/v1/track \
   -H "X-API-Key: mtx_pub_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -287,7 +306,7 @@ Launch an EC2 instance with the following configuration:
 | AMI | Ubuntu 24.04 LTS (`ubuntu-noble-24.04-amd64-server`) |
 | Instance Type | `t3.micro` (dev/staging) or `t3.small` (production) |
 | Storage | 20 GB gp3 EBS minimum |
-| Security Group — Inbound | Port `22` (SSH) from your IP; Port `8080` (API) from `0.0.0.0/0` |
+| Security Group — Inbound | Port `22` (SSH) from your IP; Port `80` (HTTP) and `443` (HTTPS) from `0.0.0.0/0` |
 | Security Group — Outbound | All traffic |
 
 > **Note:** For production, restrict port `8080` to your load balancer or VPC CIDR rather than `0.0.0.0/0`. Never expose ports `5432` (PostgreSQL) or `6379` (Redis) to the public internet.
@@ -402,7 +421,7 @@ services:
       RATE_LIMIT_RPS: ${RATE_LIMIT_RPS}
       SERVER_PORT: 8080
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080" # Bind to localhost only
     depends_on:
       redis:
         condition: service_healthy
@@ -446,11 +465,11 @@ metricix-api  | Netty started on port 8080
 ### Step 6 — Verify Deployment
 
 ```bash
-# Health check
-curl http://<EC2_PUBLIC_IP>:8080/actuator/health
+# Health check (from the EC2 instance itself)
+curl http://localhost:8080/actuator/health
 
-# Send a test event
-curl -s -X POST http://<EC2_PUBLIC_IP>:8080/api/v1/track \
+# Send a test event via the public Nginx proxy
+curl -s -X POST https://api.mihirr.in/api/v1/track \
   -H "X-API-Key: mtx_pub_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{"event_type": "deployment_test", "payload": {"env": "ec2"}}'
@@ -479,7 +498,7 @@ docker compose down -v
 docker compose pull metricix-api && docker compose up -d metricix-api
 
 # Connect to PostgreSQL database
-docker compose exec postgres psql -U metricix_admin -d metricix_db
+docker compose exec postgres psql -U metricix_user -d metricix
 
 # Inspect the Dead Letter Queue
 docker exec metricix-redis redis-cli LRANGE metricix_dlq 0 -1
