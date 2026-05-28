@@ -26,8 +26,98 @@
             }
         }
     </script>
+    <style>
+        /* ===== Theme Variables matching index.html ===== */
+        :root {
+            --bg-primary: #f8fafc;
+            --orb-1: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+        }
+        html.dark {
+            --bg-primary: #0f172a;
+            --orb-1: radial-gradient(circle, rgba(37, 99, 235, 0.16) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, transparent 70%);
+        }
+
+        body {
+            background-color: var(--bg-primary) !important;
+            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        nav, main {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== Animated Background Orbs ===== */
+        .bg-orbs {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-orbs .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            will-change: transform;
+        }
+
+        .orb--1 {
+            width: 600px;
+            height: 600px;
+            background: var(--orb-1);
+            top: -10%;
+            left: -5%;
+            animation: orbDrift1 18s ease-in-out infinite alternate;
+        }
+
+        .orb--2 {
+            width: 500px;
+            height: 500px;
+            background: var(--orb-2);
+            top: 40%;
+            right: -8%;
+            animation: orbDrift2 22s ease-in-out infinite alternate;
+        }
+
+        .orb--3 {
+            width: 450px;
+            height: 450px;
+            background: var(--orb-3);
+            bottom: -10%;
+            left: 30%;
+            animation: orbDrift3 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes orbDrift1 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(80px, 60px) scale(1.15); }
+        }
+
+        @keyframes orbDrift2 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-60px, -80px) scale(1.1); }
+        }
+
+        @keyframes orbDrift3 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, -50px) scale(1.2); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb--1"></div>
+        <div class="orb orb--2"></div>
+        <div class="orb orb--3"></div>
+    </div>
+
     <!-- Navbar -->
     <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +132,7 @@
                         <span class="font-bold text-xl tracking-tight">Metricix</span>
                     </a>
                     <div class="hidden sm:flex space-x-2">
-                        <a href="index.html" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Emitter</a>
+                        <a href="emitter.html" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Emitter</a>
                         <a href="dashboard.html" class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium text-gray-900 dark:text-white">Dashboard</a>
                     </div>
                 </div>

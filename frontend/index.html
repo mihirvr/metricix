@@ -1,548 +1,1008 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metricix - Event Emitter</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
-                    }
-                }
+    <meta name="description" content="Metricix — A high-concurrency, reactive event ingestion engine built on Spring WebFlux for massive-scale real-time telemetry.">
+    <title>Metricix — Real-Time Telemetry, Reimagined</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        /* ===== CSS Custom Properties ===== */
+        :root {
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+            /* Timing */
+            --transition-fast: 0.2s ease;
+            --transition-mid: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Shared accent */
+            --accent-start: #2563eb;
+            --accent-mid: #3b82f6;
+            --accent-end: #60a5fa;
+            --glow-color: rgba(37, 99, 235, 0.35);
+        }
+
+        /* ===== Dark Theme (default) ===== */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --bg-glass-hover: rgba(255, 255, 255, 0.08);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glass-hover: rgba(255, 255, 255, 0.16);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --nav-bg: rgba(15, 23, 42, 0.72);
+            --orb-1: radial-gradient(circle, rgba(37, 99, 235, 0.16) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, transparent 70%);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --chart-line: rgba(59, 130, 246, 0.35);
+            --chart-fill-start: rgba(59, 130, 246, 0.12);
+            --chart-fill-end: rgba(59, 130, 246, 0.0);
+            --btn-secondary-bg: transparent;
+            --btn-secondary-border: rgba(255, 255, 255, 0.15);
+            --btn-secondary-text: var(--text-primary);
+            --btn-secondary-hover-bg: rgba(255, 255, 255, 0.06);
+        }
+
+        /* ===== Light Theme ===== */
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #e2e8f0;
+            --bg-glass: rgba(255, 255, 255, 0.55);
+            --bg-glass-hover: rgba(255, 255, 255, 0.72);
+            --border-glass: rgba(0, 0, 0, 0.06);
+            --border-glass-hover: rgba(0, 0, 0, 0.12);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --nav-bg: rgba(248, 250, 252, 0.72);
+            --orb-1: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --chart-line: rgba(59, 130, 246, 0.25);
+            --chart-fill-start: rgba(59, 130, 246, 0.08);
+            --chart-fill-end: rgba(59, 130, 246, 0.0);
+            --btn-secondary-bg: transparent;
+            --btn-secondary-border: rgba(0, 0, 0, 0.15);
+            --btn-secondary-text: var(--text-primary);
+            --btn-secondary-hover-bg: rgba(0, 0, 0, 0.04);
+        }
+
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color var(--transition-slow), color var(--transition-slow);
+            line-height: 1.6;
+        }
+
+        /* ===== Animated Background Orbs ===== */
+        .bg-orbs {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-orbs .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            will-change: transform;
+        }
+
+        .orb--1 {
+            width: 600px;
+            height: 600px;
+            background: var(--orb-1);
+            top: -10%;
+            left: -5%;
+            animation: orbDrift1 18s ease-in-out infinite alternate;
+        }
+
+        .orb--2 {
+            width: 500px;
+            height: 500px;
+            background: var(--orb-2);
+            top: 40%;
+            right: -8%;
+            animation: orbDrift2 22s ease-in-out infinite alternate;
+        }
+
+        .orb--3 {
+            width: 450px;
+            height: 450px;
+            background: var(--orb-3);
+            bottom: -10%;
+            left: 30%;
+            animation: orbDrift3 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes orbDrift1 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(80px, 60px) scale(1.15); }
+        }
+
+        @keyframes orbDrift2 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-60px, -80px) scale(1.1); }
+        }
+
+        @keyframes orbDrift3 {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, -50px) scale(1.2); }
+        }
+
+        /* ===== Antigravity Float Keyframes ===== */
+        @keyframes floatSlow {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-12px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes floatMedium {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-8px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes floatFast {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-6px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes floatSubtle {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-4px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0%   { box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10); }
+            50%  { box-shadow: 0 0 30px var(--glow-color), 0 0 80px rgba(59, 130, 246, 0.18); }
+            100% { box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10); }
+        }
+
+        @keyframes gradientShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== Utility ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== Navbar ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--nav-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-glass);
+            transition: background var(--transition-slow), border-color var(--transition-slow);
+        }
+
+        .navbar__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .navbar__logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .navbar__logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            flex-shrink: 0;
+        }
+
+        .navbar__logo-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #fff;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .navbar__logo-text {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+        }
+
+        .navbar__actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-glass);
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-glass-hover);
+            border-color: var(--border-glass-hover);
+            color: var(--text-primary);
+            transform: scale(1.05);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: fill var(--transition-fast);
+        }
+
+        /* ===== Background Chart ===== */
+        .chart-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+            padding: 60px 24px;
+            animation: floatSubtle 10s ease-in-out infinite;
+        }
+
+        .chart-backdrop canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* ===== Hero ===== */
+        .hero {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 100vh;
+            padding: 120px 24px 80px;
+        }
+
+        .hero__brand {
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            animation: fadeInUp 0.8s ease both, floatSlow 7s ease-in-out infinite;
+        }
+
+        .hero__headline {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            line-height: 1.4;
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease 0.15s both, floatMedium 8s ease-in-out 0.3s infinite;
+        }
+
+        .hero__sub {
+            font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+            color: var(--text-secondary);
+            max-width: 620px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+            line-height: 1.75;
+        }
+
+        .hero__stats {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 48px;
+            animation: fadeInUp 0.8s ease 0.8s both;
+        }
+
+        .hero__stat {
+            text-align: center;
+        }
+
+        .hero__stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--accent-mid);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .hero__stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 4px;
+        }
+
+        .hero__cta-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 1s ease 0.6s both;
+        }
+
+        /* ===== CTA Buttons ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 14px;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-mid);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn--primary {
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-mid), var(--accent-end));
+            background-size: 200% 200%;
+            color: #fff;
+            animation: gradientShift 4s ease infinite, pulseGlow 3s ease-in-out infinite, floatFast 6s ease-in-out 0.2s infinite;
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 0 40px var(--glow-color), 0 12px 40px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn--secondary {
+            background: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1.5px solid var(--btn-secondary-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            animation: floatFast 6s ease-in-out 0.8s infinite;
+        }
+
+        .btn--secondary:hover {
+            background: var(--btn-secondary-hover-bg);
+            border-color: var(--accent-start);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 30px rgba(37, 99, 235, 0.10);
+        }
+
+        /* ===== Features Section ===== */
+        .features {
+            position: relative;
+            z-index: 1;
+            padding: 40px 24px 120px;
+        }
+
+        .features__heading {
+            text-align: center;
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 800;
+            margin-bottom: 56px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .features__grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 28px;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 36px 32px;
+            box-shadow: var(--card-shadow);
+            transition: all var(--transition-mid);
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .feature-card:nth-child(1) {
+            animation: fadeInUp 0.8s ease 0.1s both, floatSlow 9s ease-in-out 0s infinite;
+        }
+
+        .feature-card:nth-child(2) {
+            animation: fadeInUp 0.8s ease 0.25s both, floatMedium 8s ease-in-out 0.4s infinite;
+        }
+
+        .feature-card:nth-child(3) {
+            animation: fadeInUp 0.8s ease 0.4s both, floatSlow 10s ease-in-out 0.8s infinite;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-glass-hover);
+            border-color: var(--border-glass-hover);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--card-shadow), 0 0 40px rgba(37, 99, 235, 0.08);
+        }
+
+        .feature-card__icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.08));
+            border: 1px solid rgba(37, 99, 235, 0.10);
+        }
+
+        .feature-card__icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--accent-end);
+            fill: none;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .feature-card__title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+
+        .feature-card__desc {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        /* ===== How It Works Section ===== */
+        .how-it-works {
+            position: relative;
+            z-index: 1;
+            padding: 40px 24px 80px;
+        }
+
+        .how-it-works__heading {
+            text-align: center;
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 800;
+            margin-bottom: 48px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .how-it-works__pipeline {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0;
+            max-width: 960px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 180px;
+            max-width: 220px;
+            text-align: center;
+            padding: 0 12px;
+            position: relative;
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .pipeline-step:nth-child(1) { animation-delay: 0.1s; }
+        .pipeline-step:nth-child(2) { animation-delay: 0.2s; }
+        .pipeline-step:nth-child(3) { animation-delay: 0.3s; }
+        .pipeline-step:nth-child(4) { animation-delay: 0.4s; }
+
+        .pipeline-step__number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-mid));
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .pipeline-step__title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .pipeline-step__desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .pipeline-arrow {
+            display: flex;
+            align-items: center;
+            padding-top: 8px;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 32px 24px 40px;
+            border-top: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer a {
+            color: var(--accent-start);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer a:hover {
+            color: var(--accent-end);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 100px 20px 60px;
+                min-height: auto;
+            }
+
+            .hero__cta-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+                justify-content: center;
+            }
+
+            .features__grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-backdrop {
+                height: 200px;
+                opacity: 0.2;
+            }
+
+            .hero__stats {
+                gap: 20px;
+            }
+
+            .pipeline-arrow {
+                display: none;
+            }
+
+            .how-it-works__pipeline {
+                flex-direction: column;
+                align-items: center;
+                gap: 28px;
             }
         }
-    </script>
-    <style>
-        /* Custom scrollbar for terminal */
-        .terminal-scroll::-webkit-scrollbar {
-            width: 8px;
+
+        @media (max-width: 480px) {
+            .navbar__inner {
+                height: 56px;
+            }
+
+            .navbar__logo {
+                font-size: 1.2rem;
+            }
+
+            .hero__brand {
+                font-size: 2.5rem;
+            }
+
+            .feature-card {
+                padding: 28px 24px;
+            }
         }
-        .terminal-scroll::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.1); 
-            border-radius: 4px;
-        }
-        .terminal-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.2); 
-            border-radius: 4px;
-        }
-        .terminal-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.3); 
+
+        /* ===== Reduced Motion ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+<body>
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb--1"></div>
+        <div class="orb orb--2"></div>
+        <div class="orb orb--3"></div>
+    </div>
+
     <!-- Navbar -->
-    <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-8">
-                    <a href="index.html" class="flex-shrink-0 flex items-center gap-2">
-                        <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shadow-sm">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <span class="font-bold text-xl tracking-tight">Metricix</span>
-                    </a>
-                    <div class="hidden sm:flex space-x-2">
-                        <a href="index.html" class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium text-gray-900 dark:text-white">Emitter</a>
-                        <a href="dashboard.html" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
-                    </div>
+    <nav class="navbar" id="navbar">
+        <div class="container navbar__inner">
+            <a href="index.html" class="navbar__logo" id="logo">
+                <div class="navbar__logo-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
-                        </svg>
-                    </a>
-                    <button id="theme-toggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-<svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.25c.414 0 .75.336.75.75v1.5a.75.75 0 01-1.5 0v-1.5c0-.414.336-.75.75-.75zM4.879 4.879a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM2.25 12c0-.414.336-.75.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.879 19.121a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12 21.75c-.414 0-.75-.336-.75-.75v-1.5a.75.75 0 011.5 0v1.5c0 .414-.336.75-.75.75zM19.121 19.121a.75.75 0 01-1.06 0l-1.06-1.06a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 010 1.06zM21.75 12c0 .414-.336.75-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM19.121 4.879a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5z" clip-rule="evenodd" /></svg>
-                    </button>
-                    <!-- Mobile Menu Placeholder -->
-                    <div class="sm:hidden flex items-center">
-                         <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
-                            <span class="sr-only">Open main menu</span>
-                        </button>
-                    </div>
-                </div>
+                <span class="navbar__logo-text">Metricix</span>
+            </a>
+            <div class="navbar__actions">
+                <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark/light mode" title="Toggle theme">
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: block;">
+                        <path fill-rule="evenodd" d="M12 2.25c.414 0 .75.336.75.75v1.5a.75.75 0 01-1.5 0v-1.5c0-.414.336-.75.75-.75zM4.879 4.879a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM2.25 12c0-.414.336-.75.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.879 19.121a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12 21.75c-.414 0-.75-.336-.75-.75v-1.5a.75.75 0 011.5 0v1.5c0 .414-.336.75-.75.75zM19.121 19.121a.75.75 0 01-1.06 0l-1.06-1.06a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 010 1.06zM21.75 12c0 .414-.336.75-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM19.121 4.879a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5z" clip-rule="evenodd" />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" style="display: none;">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                    </svg>
+                </button>
+                <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer" class="icon-btn" id="github-link" aria-label="View on GitHub" title="GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.82-.26.82-.58l-.01-2.05c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.81 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3Z"/>
+                    </svg>
+                </a>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Event Emitter</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm md:text-base">Test your integration by sending events directly to the Metricix engine.</p>
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <!-- Decorative Chart.js backdrop -->
+        <div class="chart-backdrop" aria-hidden="true">
+            <canvas id="bg-chart"></canvas>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Form Section -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 relative overflow-hidden">
-                <form id="emitter-form" class="space-y-6 relative z-10">
-                    <div>
-                        <label for="api-key-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">X-API-Key</label>
-                        <select id="api-key-select" class="mt-1 block w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white cursor-pointer">
-                            <option value="mtx_pub_test_123">mtx_pub_test_123</option>
-                            <option value="mtx_pub_prod_999">mtx_pub_prod_999</option>
-                            <option value="custom">Custom...</option>
-                        </select>
-                        <input type="text" id="api-key-custom" placeholder="Enter custom API key" class="mt-2 hidden w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white">
-                        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Select an API key or enter a custom one.</p>
-                    </div>
+        <h1 class="hero__brand">Metricix</h1>
+        <p class="hero__headline">Real-Time Telemetry, Reimagined.</p>
+        <p class="hero__sub">A self-hosted, non-blocking telemetry ingestion and analytics engine. Ingest millions of events with sub-15ms latency, buffer in Redis, and persist to PostgreSQL — all without a single blocked thread.</p>
 
-                    <!-- Mode Toggle -->
-                    <div class="pt-2">
-                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-full">
-                            <button type="button" id="mode-single" class="w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all">Single Request</button>
-                            <button type="button" id="mode-multiple" class="w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">Multiple Requests</button>
-                        </div>
-                    </div>
+        <p class="hero__cta-label" style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px;animation:fadeInUp 0.8s ease 0.5s both;">Try the live demo</p>
+        <div class="hero__cta-group">
+            <a href="emitter.html" class="btn btn--primary" id="cta-emitter">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Launch Emitter
+            </a>
+            <a href="dashboard.html" class="btn btn--secondary" id="cta-dashboard">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                View Dashboard
+            </a>
+        </div>
 
-                    <!-- Single Request Section -->
-                    <div id="section-single" class="pt-5 border-t border-gray-100 dark:border-gray-800/60">
-                        <label for="event-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
-                        <select id="event-type-select" class="mt-1 block w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white font-mono cursor-pointer">
-                            <option value="button_click">button_click</option>
-                            <option value="page_view">page_view</option>
-                            <option value="form_submit">form_submit</option>
-                            <option value="user_signup">user_signup</option>
-                            <option value="custom">Custom...</option>
-                        </select>
-                        <input type="text" id="event-type-custom" placeholder="custom_event_name" class="mt-2 hidden w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm dark:text-white font-mono">
-                    </div>
-
-                    <!-- Multiple Requests Section -->
-                    <div id="section-multiple" class="hidden pt-5 border-t border-gray-100 dark:border-gray-800/60 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Sequence <span class="text-xs text-gray-500 font-normal">(Up to 5)</span></label>
-                            <button type="button" id="btn-add-event" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">+ Add Event</button>
-                        </div>
-                        <div id="multiple-events-list" class="space-y-3">
-                            <!-- Populated via JS -->
-                        </div>
-                    </div>
-
-                    <!-- Payload Section -->
-                    <div class="pt-5 border-t border-gray-100 dark:border-gray-800/60">
-                        <div class="flex justify-between items-center mb-1">
-                            <label for="payload" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Shared Payload (JSON)</label>
-                            <button type="button" id="format-json" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Format JSON</button>
-                        </div>
-                        <textarea id="payload" rows="6" required class="block w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-mono text-sm dark:text-white resize-y leading-relaxed" placeholder='{
-  "button_id": "signup_hero",
-  "path": "/home"
-}'>{
-  "button_id": "signup_hero",
-  "path": "/home"
-}</textarea>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <button type="submit" id="send-btn" class="flex-grow flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all">
-                            Send Event
-                        </button>
-                        <button type="button" id="randomize-btn" class="hidden flex-grow justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all">
-                            Randomize & Send
-                        </button>
-                    </div>
-                </form>
+        <div class="hero__stats">
+            <div class="hero__stat">
+                <div class="hero__stat-value">&lt; 15ms</div>
+                <div class="hero__stat-label">P95 Latency</div>
             </div>
-
-            <!-- Terminal Section -->
-            <div class="bg-[#0D1117] rounded-xl shadow-xl border border-gray-800 flex flex-col overflow-hidden h-[500px] lg:h-auto font-mono">
-                <!-- Terminal Header -->
-                <div class="bg-[#161B22] px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#ff5f56] shadow-sm"></div>
-                        <div class="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-sm"></div>
-                        <div class="w-3 h-3 rounded-full bg-[#27c93f] shadow-sm"></div>
-                    </div>
-                    <span class="text-xs text-gray-400">Live Console Log</span>
-                    <button id="clear-log" class="text-xs text-gray-500 hover:text-white transition-colors">Clear</button>
-                </div>
-                <!-- Terminal Body -->
-                <div id="terminal" class="flex-grow p-5 overflow-y-auto text-sm terminal-scroll space-y-4">
-                    <div class="text-gray-500">Waiting for events...</div>
-                </div>
+            <div class="hero__stat">
+                <div class="hero__stat-value">1,000+</div>
+                <div class="hero__stat-label">Req/sec (1 vCPU)</div>
+            </div>
+            <div class="hero__stat">
+                <div class="hero__stat-value">0%</div>
+                <div class="hero__stat-label">Data Loss</div>
+            </div>
+            <div class="hero__stat">
+                <div class="hero__stat-value">202</div>
+                <div class="hero__stat-label">Instant Response</div>
             </div>
         </div>
-    </main>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2 class="features__heading">Engineered for Scale</h2>
+        <div class="features__grid">
+            <article class="feature-card" id="feature-webflux">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h3 class="feature-card__title">Non-Blocking I/O</h3>
+                <p class="feature-card__desc">Built on Spring WebFlux and Project Reactor. The entire ingestion path is fully asynchronous — zero JVM thread blocking on the hot path for both reads and writes.</p>
+            </article>
+            <article class="feature-card" id="feature-buffer">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <h3 class="feature-card__title">Redis Event Buffer</h3>
+                <p class="feature-card__desc">Events are atomically queued via RPUSH and drained in bulk by a background sweeper. The API returns 202 Accepted before any database interaction occurs.</p>
+            </article>
+            <article class="feature-card" id="feature-stack">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                </div>
+                <h3 class="feature-card__title">Bulk PostgreSQL Writes</h3>
+                <p class="feature-card__desc">A single INSERT ... VALUES per batch cycle via R2DBC — not N individual inserts. Schema managed automatically by Flyway on startup.</p>
+            </article>
+            <article class="feature-card" id="feature-dlq">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                </div>
+                <h3 class="feature-card__title">Dead Letter Queue</h3>
+                <p class="feature-card__desc">Failed database batches are never dropped. They are preserved in a Redis DLQ for inspection and replay. Zero silent data loss, ever.</p>
+            </article>
+            <article class="feature-card" id="feature-ratelimit">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <h3 class="feature-card__title">Per-Key Rate Limiting</h3>
+                <p class="feature-card__desc">Token bucket algorithm backed by Redis. Works correctly across multiple instances with symmetric API key authentication and mtx_pub_ prefix enforcement.</p>
+            </article>
+            <article class="feature-card" id="feature-observability">
+                <div class="feature-card__icon">
+                    <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                </div>
+                <h3 class="feature-card__title">Prometheus Metrics</h3>
+                <p class="feature-card__desc">Custom ingestion counters and batch size histograms exposed at /actuator/prometheus. Structured JSON logging compatible with Datadog, ELK, and Grafana Loki.</p>
+            </article>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <h2 class="how-it-works__heading">How It Works</h2>
+        <div class="how-it-works__pipeline">
+            <div class="pipeline-step">
+                <div class="pipeline-step__number">1</div>
+                <div class="pipeline-step__title">Ingest</div>
+                <div class="pipeline-step__desc">Client sends a POST to /api/v1/track with an API key. The payload is validated and decorated with a timestamp and client IP.</div>
+            </div>
+            <div class="pipeline-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-step__number">2</div>
+                <div class="pipeline-step__title">Buffer</div>
+                <div class="pipeline-step__desc">The event is atomically pushed to a Redis list. The API immediately returns 202 Accepted — no database wait.</div>
+            </div>
+            <div class="pipeline-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-step__number">3</div>
+                <div class="pipeline-step__title">Flush</div>
+                <div class="pipeline-step__desc">A background sweeper atomically renames the queue every 5 seconds and drains the batch for bulk insertion.</div>
+            </div>
+            <div class="pipeline-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-step__number">4</div>
+                <div class="pipeline-step__title">Persist</div>
+                <div class="pipeline-step__desc">The entire batch is written to PostgreSQL in a single bulk INSERT via R2DBC. Failures go to the Dead Letter Queue.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+        <p>&copy; 2026 <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer">Metricix</a> &mdash; Open-source telemetry engine.</p>
+    </footer>
 
     <script>
-        // Theme Toggle Logic
-        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
-        const themeToggleBtn = document.getElementById('theme-toggle');
+        /* ===== Theme Toggle ===== */
+        (() => {
+            const toggle = document.getElementById('theme-toggle');
+            const sunIcon = document.getElementById('icon-sun');
+            const moonIcon = document.getElementById('icon-moon');
+            const html = document.documentElement;
 
-        function updateThemeIcons() {
-            if (document.documentElement.classList.contains('dark')) {
-                themeToggleLightIcon.classList.remove('hidden');
-                themeToggleDarkIcon.classList.add('hidden');
-            } else {
-                themeToggleLightIcon.classList.add('hidden');
-                themeToggleDarkIcon.classList.remove('hidden');
+            const savedTheme = localStorage.getItem('metricix-theme');
+            if (savedTheme) {
+                html.setAttribute('data-theme', savedTheme);
             }
-        }
 
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        updateThemeIcons();
-
-        themeToggleBtn.addEventListener('click', function() {
-            document.documentElement.classList.toggle('dark');
-            if (document.documentElement.classList.contains('dark')) {
-                localStorage.setItem('color-theme', 'dark');
-            } else {
-                localStorage.setItem('color-theme', 'light');
+            function syncIcons() {
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                sunIcon.style.display = isDark ? 'block' : 'none';
+                moonIcon.style.display = isDark ? 'none' : 'block';
             }
-            updateThemeIcons();
-        });
 
-        // JSON formatter
-        const payloadInput = document.getElementById('payload');
-        document.getElementById('format-json').addEventListener('click', () => {
-            try {
-                const parsed = JSON.parse(payloadInput.value);
-                payloadInput.value = JSON.stringify(parsed, null, 2);
-            } catch (e) {
-                alert('Invalid JSON: ' + e.message);
-            }
-        });
+            syncIcons();
 
-        // API Key Select Logic
-        const apiKeySelect = document.getElementById('api-key-select');
-        const apiKeyCustom = document.getElementById('api-key-custom');
-
-        apiKeySelect.addEventListener('change', (e) => {
-            if (e.target.value === 'custom') {
-                apiKeyCustom.classList.remove('hidden');
-                apiKeyCustom.required = true;
-            } else {
-                apiKeyCustom.classList.add('hidden');
-                apiKeyCustom.required = false;
-            }
-        });
-
-        // Event Type Single Logic
-        const eventTypeSelect = document.getElementById('event-type-select');
-        const eventTypeCustom = document.getElementById('event-type-custom');
-
-        eventTypeSelect.addEventListener('change', (e) => {
-            if (e.target.value === 'custom') {
-                eventTypeCustom.classList.remove('hidden');
-                eventTypeCustom.required = true;
-            } else {
-                eventTypeCustom.classList.add('hidden');
-                eventTypeCustom.required = false;
-            }
-        });
-
-        // Mode Toggle Logic
-        let requestMode = 'single';
-        const modeSingleBtn = document.getElementById('mode-single');
-        const modeMultipleBtn = document.getElementById('mode-multiple');
-        const sectionSingle = document.getElementById('section-single');
-        const sectionMultiple = document.getElementById('section-multiple');
-        const sendBtn = document.getElementById('send-btn');
-        const randomizeBtn = document.getElementById('randomize-btn');
-
-        function updateMode(mode) {
-            requestMode = mode;
-            if (mode === 'single') {
-                modeSingleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
-                modeMultipleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
-                sectionSingle.classList.remove('hidden');
-                sectionMultiple.classList.add('hidden');
-                randomizeBtn.classList.add('hidden');
-                sendBtn.textContent = 'Send Event';
-            } else {
-                modeMultipleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-white transition-all';
-                modeSingleBtn.className = 'w-1/2 px-3 py-2 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
-                sectionSingle.classList.add('hidden');
-                sectionMultiple.classList.remove('hidden');
-                randomizeBtn.classList.remove('hidden');
-                randomizeBtn.classList.add('flex');
-                sendBtn.textContent = 'Send Sequential';
-            }
-        }
-
-        modeSingleBtn.addEventListener('click', () => updateMode('single'));
-        modeMultipleBtn.addEventListener('click', () => updateMode('multiple'));
-
-        // Multiple Events Logic
-        const maxEvents = 5;
-        let multipleEvents = [{ type: 'button_click', custom: '', count: 1 }];
-        const eventOptions = ['button_click', 'page_view', 'form_submit', 'user_signup', 'custom'];
-
-        function renderMultipleEvents() {
-            const list = document.getElementById('multiple-events-list');
-            list.innerHTML = '';
-            
-            multipleEvents.forEach((ev, index) => {
-                const row = document.createElement('div');
-                row.className = 'flex flex-col sm:flex-row sm:items-start gap-3 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg border border-gray-200 dark:border-gray-800';
-                
-                const selectWrapper = document.createElement('div');
-                selectWrapper.className = 'flex-grow w-full';
-
-                const typeSelect = document.createElement('select');
-                typeSelect.className = 'block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-mono focus:ring-blue-500 outline-none';
-                eventOptions.forEach(opt => {
-                    const o = document.createElement('option');
-                    o.value = opt;
-                    o.textContent = opt === 'custom' ? 'Custom...' : opt;
-                    if (ev.type === opt) o.selected = true;
-                    typeSelect.appendChild(o);
-                });
-
-                const customInput = document.createElement('input');
-                customInput.type = 'text';
-                customInput.placeholder = 'custom_event_name';
-                customInput.className = `mt-2 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-mono focus:ring-blue-500 outline-none ${ev.type === 'custom' ? '' : 'hidden'}`;
-                customInput.value = ev.custom;
-
-                typeSelect.addEventListener('change', (e) => {
-                    multipleEvents[index].type = e.target.value;
-                    if (e.target.value === 'custom') {
-                        customInput.classList.remove('hidden');
-                    } else {
-                        customInput.classList.add('hidden');
-                    }
-                });
-
-                customInput.addEventListener('input', (e) => {
-                    multipleEvents[index].custom = e.target.value;
-                });
-
-                selectWrapper.appendChild(typeSelect);
-                selectWrapper.appendChild(customInput);
-
-                const countWrapper = document.createElement('div');
-                countWrapper.className = 'flex items-center gap-2';
-                
-                const countLabel = document.createElement('span');
-                countLabel.className = 'text-xs text-gray-500 dark:text-gray-400';
-                countLabel.textContent = 'Qty:';
-
-                const countInput = document.createElement('input');
-                countInput.type = 'number';
-                countInput.min = '1';
-                countInput.max = '100';
-                countInput.className = 'w-16 px-2 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 outline-none text-center';
-                countInput.value = ev.count;
-                countInput.addEventListener('change', (e) => {
-                    let val = parseInt(e.target.value, 10);
-                    if (isNaN(val) || val < 1) val = 1;
-                    multipleEvents[index].count = val;
-                    countInput.value = val;
-                });
-
-                countWrapper.appendChild(countLabel);
-                countWrapper.appendChild(countInput);
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'mt-1 sm:mt-0 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed';
-                removeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
-                removeBtn.disabled = multipleEvents.length <= 1;
-                removeBtn.addEventListener('click', () => {
-                    multipleEvents.splice(index, 1);
-                    renderMultipleEvents();
-                });
-
-                row.appendChild(selectWrapper);
-                row.appendChild(countWrapper);
-                row.appendChild(removeBtn);
-                list.appendChild(row);
+            toggle.addEventListener('click', () => {
+                const current = html.getAttribute('data-theme');
+                const next = current === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', next);
+                localStorage.setItem('metricix-theme', next);
+                syncIcons();
+                // Re-render chart colors
+                updateChartColors();
             });
-            
-            document.getElementById('btn-add-event').style.display = multipleEvents.length >= maxEvents ? 'none' : 'block';
-        }
+        })();
 
-        document.getElementById('btn-add-event').addEventListener('click', () => {
-            if (multipleEvents.length < maxEvents) {
-                multipleEvents.push({ type: 'button_click', custom: '', count: 1 });
-                renderMultipleEvents();
-            }
-        });
+        /* ===== Decorative Background Chart ===== */
+        (() => {
+            const ctx = document.getElementById('bg-chart');
+            if (!ctx) return;
 
-        renderMultipleEvents();
-
-        // Terminal Logging
-        const terminal = document.getElementById('terminal');
-        const clearLogBtn = document.getElementById('clear-log');
-        let isFirstLog = true;
-
-        function appendLog(type, message, details = null) {
-            if (isFirstLog) {
-                terminal.innerHTML = '';
-                isFirstLog = false;
+            // Generate organic-looking telemetry data
+            function generateData(points, base, amplitude) {
+                const data = [];
+                let value = base;
+                for (let i = 0; i < points; i++) {
+                    value += (Math.random() - 0.48) * amplitude;
+                    value = Math.max(base - amplitude * 2, Math.min(base + amplitude * 2, value));
+                    data.push(Math.round(value * 10) / 10);
+                }
+                return data;
             }
 
-            const logEntry = document.createElement('div');
-            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-            
-            let colorClass = 'text-[#58a6ff]'; // blue
-            if (type === 'error') colorClass = 'text-[#f85149]'; // red
-            if (type === 'success') colorClass = 'text-[#3fb950]'; // green
-            if (type === 'request') colorClass = 'text-[#bc8cff]'; // purple
-            if (type === 'info') colorClass = 'text-gray-400';
+            const labels = Array.from({ length: 40 }, (_, i) => '');
+            const dataset1 = generateData(40, 60, 8);
+            const dataset2 = generateData(40, 40, 6);
 
-            let logHTML = `<div><span class="text-gray-500">[${time}]</span> <span class="${colorClass}">${message}</span></div>`;
-            
-            if (details) {
-                let formattedDetails = typeof details === 'string' ? details : JSON.stringify(details, null, 2);
-                logHTML += `<pre class="mt-2 ml-4 p-3 bg-[#161B22] border border-gray-800 rounded-md text-gray-300 text-xs overflow-x-auto leading-relaxed shadow-inner">${formattedDetails}</pre>`;
+            function getChartColors() {
+                const style = getComputedStyle(document.documentElement);
+                return {
+                    line: style.getPropertyValue('--chart-line').trim(),
+                    fillStart: style.getPropertyValue('--chart-fill-start').trim(),
+                    fillEnd: style.getPropertyValue('--chart-fill-end').trim(),
+                };
             }
 
-            logEntry.innerHTML = logHTML;
-            terminal.appendChild(logEntry);
-            terminal.scrollTop = terminal.scrollHeight;
-        }
+            const colors = getChartColors();
 
-        clearLogBtn.addEventListener('click', () => {
-            terminal.innerHTML = '<div class="text-gray-500">Waiting for events...</div>';
-            isFirstLog = true;
-        });
-
-        // Form Submission Logic
-        const form = document.getElementById('emitter-form');
-        
-        async function sendSingleRequest(eventType, payloadObj, apiKey) {
-            const requestBody = {
-                event_type: eventType,
-                payload: payloadObj
-            };
-
-            appendLog('request', `> POST /api/v1/track (${eventType})`, requestBody);
-
-            try {
-                const response = await fetch('https://api.mihirr.in/api/v1/track', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
+            window.__bgChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            data: dataset1,
+                            borderColor: 'rgba(59, 130, 246, 0.4)',
+                            borderWidth: 2,
+                            fill: true,
+                            backgroundColor: (context) => {
+                                const chart = context.chart;
+                                const { ctx: c, chartArea } = chart;
+                                if (!chartArea) return 'transparent';
+                                const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                grad.addColorStop(0, 'rgba(59, 130, 246, 0.12)');
+                                grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                                return grad;
+                            },
+                            tension: 0.45,
+                            pointRadius: 0,
+                        },
+                        {
+                            data: dataset2,
+                            borderColor: 'rgba(37, 99, 235, 0.3)',
+                            borderWidth: 1.5,
+                            fill: true,
+                            backgroundColor: (context) => {
+                                const chart = context.chart;
+                                const { ctx: c, chartArea } = chart;
+                                if (!chartArea) return 'transparent';
+                                const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                grad.addColorStop(0, 'rgba(37, 99, 235, 0.08)');
+                                grad.addColorStop(1, 'rgba(37, 99, 235, 0)');
+                                return grad;
+                            },
+                            tension: 0.45,
+                            pointRadius: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
                     },
-                    body: JSON.stringify(requestBody)
-                });
-
-                let responseData;
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    responseData = await response.json();
-                } else {
-                    responseData = await response.text();
-                }
-
-                if (response.ok) {
-                    appendLog('success', `< ${response.status} ${response.statusText}`, responseData);
-                } else {
-                    appendLog('error', `< ${response.status} ${response.statusText}`, responseData);
-                }
-            } catch (error) {
-                appendLog('error', '< Network Error or CORS Issue', error.message);
-            }
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        async function processSubmission(isRandomized = false) {
-            const apiKey = apiKeySelect.value === 'custom' ? apiKeyCustom.value.trim() : apiKeySelect.value;
-            let payloadObj = {};
-            
-            try {
-                payloadObj = JSON.parse(payloadInput.value);
-            } catch(e) {
-                appendLog('error', 'Failed to parse Payload as JSON', e.message);
-                return;
-            }
-
-            let eventsToSend = [];
-
-            if (requestMode === 'single') {
-                const type = eventTypeSelect.value === 'custom' ? eventTypeCustom.value.trim() : eventTypeSelect.value;
-                if (!type) {
-                    alert("Please specify an event type.");
-                    return;
-                }
-                eventsToSend.push(type);
-            } else {
-                for (const ev of multipleEvents) {
-                    const type = ev.type === 'custom' ? ev.custom.trim() : ev.type;
-                    if (!type) continue;
-                    for (let i = 0; i < ev.count; i++) {
-                        eventsToSend.push(type);
+                    interaction: { intersect: false },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
                     }
                 }
-            }
+            });
 
-            if (eventsToSend.length === 0) {
-                alert("No events configured to send.");
-                return;
-            }
-
-            if (isRandomized) {
-                eventsToSend = shuffleArray([...eventsToSend]);
-                appendLog('info', `Randomizing ${eventsToSend.length} events...`);
-            } else if (eventsToSend.length > 1) {
-                appendLog('info', `Sending ${eventsToSend.length} events sequentially...`);
-            }
-
-            // Disable UI
-            const originalSendText = sendBtn.textContent;
-            const originalRandText = randomizeBtn.textContent;
-            sendBtn.disabled = true;
-            randomizeBtn.disabled = true;
-            sendBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            randomizeBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            sendBtn.textContent = 'Sending...';
-
-            // Send loop
-            for (const [index, type] of eventsToSend.entries()) {
-                await sendSingleRequest(type, payloadObj, apiKey);
-                // Optional slight delay so terminal isn't totally synchronous
-                await new Promise(r => setTimeout(r, 100));
-            }
-
-            if (eventsToSend.length > 1) {
-                appendLog('info', `Finished sending ${eventsToSend.length} events.`);
-            }
-
-            // Restore UI
-            sendBtn.disabled = false;
-            randomizeBtn.disabled = false;
-            sendBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-            randomizeBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-            sendBtn.textContent = originalSendText;
-            randomizeBtn.textContent = originalRandText;
-        }
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            processSubmission(false);
-        });
-
-        randomizeBtn.addEventListener('click', () => {
-            processSubmission(true);
-        });
+            window.updateChartColors = () => {
+                // Chart gradient colors are computed on render, so just trigger an update
+                window.__bgChart.update();
+            };
+        })();
     </script>
 </body>
 </html>
