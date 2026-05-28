@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Metricix — A high-concurrency, reactive event ingestion engine built on Spring WebFlux for massive-scale real-time telemetry.">
-    <title>Metricix — Real-Time Telemetry, Reimagined</title>
+    <meta name="description"
+        content="Metricix — A high-concurrency, reactive event ingestion engine built on Spring WebFlux for massive-scale real-time telemetry.">
+    <title>Metricix Telemetry Engine</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         /* ===== CSS Custom Properties ===== */
@@ -77,7 +81,9 @@
         }
 
         /* ===== Reset & Base ===== */
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -141,60 +147,130 @@
         }
 
         @keyframes orbDrift1 {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(80px, 60px) scale(1.15); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(80px, 60px) scale(1.15);
+            }
         }
 
         @keyframes orbDrift2 {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-60px, -80px) scale(1.1); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(-60px, -80px) scale(1.1);
+            }
         }
 
         @keyframes orbDrift3 {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(50px, -50px) scale(1.2); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(50px, -50px) scale(1.2);
+            }
         }
 
         /* ===== Antigravity Float Keyframes ===== */
         @keyframes floatSlow {
-            0%   { transform: translateY(0); }
-            50%  { transform: translateY(-12px); }
-            100% { transform: translateY(0); }
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
         }
 
         @keyframes floatMedium {
-            0%   { transform: translateY(0); }
-            50%  { transform: translateY(-8px); }
-            100% { transform: translateY(0); }
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
         }
 
         @keyframes floatFast {
-            0%   { transform: translateY(0); }
-            50%  { transform: translateY(-6px); }
-            100% { transform: translateY(0); }
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
         }
 
         @keyframes floatSubtle {
-            0%   { transform: translateY(0); }
-            50%  { transform: translateY(-4px); }
-            100% { transform: translateY(0); }
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
         }
 
         @keyframes pulseGlow {
-            0%   { box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10); }
-            50%  { box-shadow: 0 0 30px var(--glow-color), 0 0 80px rgba(59, 130, 246, 0.18); }
-            100% { box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10); }
+            0% {
+                box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10);
+            }
+
+            50% {
+                box-shadow: 0 0 30px var(--glow-color), 0 0 80px rgba(59, 130, 246, 0.18);
+            }
+
+            100% {
+                box-shadow: 0 0 20px var(--glow-color), 0 0 60px rgba(37, 99, 235, 0.10);
+            }
         }
 
         @keyframes gradientShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ===== Utility ===== */
@@ -573,10 +649,21 @@
             animation: fadeInUp 0.8s ease both;
         }
 
-        .pipeline-step:nth-child(1) { animation-delay: 0.1s; }
-        .pipeline-step:nth-child(2) { animation-delay: 0.2s; }
-        .pipeline-step:nth-child(3) { animation-delay: 0.3s; }
-        .pipeline-step:nth-child(4) { animation-delay: 0.4s; }
+        .pipeline-step:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .pipeline-step:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .pipeline-step:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .pipeline-step:nth-child(4) {
+            animation-delay: 0.4s;
+        }
 
         .pipeline-step__number {
             width: 36px;
@@ -697,7 +784,10 @@
 
         /* ===== Reduced Motion ===== */
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
+
+            *,
+            *::before,
+            *::after {
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
@@ -705,6 +795,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Animated background orbs -->
     <div class="bg-orbs" aria-hidden="true">
@@ -717,27 +808,27 @@
     <nav class="navbar" id="navbar">
         <div class="container navbar__inner">
             <a href="index.html" class="navbar__logo" id="logo">
-                <div class="navbar__logo-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                </div>
+                <img src="logo.png" alt="Metricix Logo" class="navbar__logo-icon">
                 <span class="navbar__logo-text">Metricix</span>
             </a>
             <div class="navbar__actions">
                 <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark/light mode" title="Toggle theme">
                     <!-- Sun icon (shown in dark mode) -->
                     <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: block;">
-                        <path fill-rule="evenodd" d="M12 2.25c.414 0 .75.336.75.75v1.5a.75.75 0 01-1.5 0v-1.5c0-.414.336-.75.75-.75zM4.879 4.879a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM2.25 12c0-.414.336-.75.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.879 19.121a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12 21.75c-.414 0-.75-.336-.75-.75v-1.5a.75.75 0 011.5 0v1.5c0 .414-.336.75-.75.75zM19.121 19.121a.75.75 0 01-1.06 0l-1.06-1.06a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 010 1.06zM21.75 12c0 .414-.336.75-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM19.121 4.879a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M12 2.25c.414 0 .75.336.75.75v1.5a.75.75 0 01-1.5 0v-1.5c0-.414.336-.75.75-.75zM4.879 4.879a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM2.25 12c0-.414.336-.75.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM4.879 19.121a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12 21.75c-.414 0-.75-.336-.75-.75v-1.5a.75.75 0 011.5 0v1.5c0 .414-.336.75-.75.75zM19.121 19.121a.75.75 0 01-1.06 0l-1.06-1.06a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 010 1.06zM21.75 12c0 .414-.336.75-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM19.121 4.879a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5z"
+                            clip-rule="evenodd" />
                     </svg>
                     <!-- Moon icon (shown in light mode) -->
                     <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" style="display: none;">
-                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                     </svg>
                 </button>
-                <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer" class="icon-btn" id="github-link" aria-label="View on GitHub" title="GitHub">
+                <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer" class="icon-btn"
+                    id="github-link" aria-label="View on GitHub" title="GitHub">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.82-.26.82-.58l-.01-2.05c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.81 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3Z"/>
+                        <path
+                            d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.82-.26.82-.58l-.01-2.05c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.81 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3Z" />
                     </svg>
                 </a>
             </div>
@@ -753,16 +844,29 @@
 
         <h1 class="hero__brand">Metricix</h1>
         <p class="hero__headline">Real-Time Telemetry, Reimagined.</p>
-        <p class="hero__sub">A self-hosted, non-blocking telemetry ingestion and analytics engine. Ingest millions of events with sub-15ms latency, buffer in Redis, and persist to PostgreSQL — all without a single blocked thread.</p>
+        <p class="hero__sub">A self-hosted, non-blocking telemetry ingestion and analytics engine. Ingest millions of
+            events with sub-15ms latency, buffer in Redis, and persist to PostgreSQL — all without a single blocked
+            thread.</p>
 
-        <p class="hero__cta-label" style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px;animation:fadeInUp 0.8s ease 0.5s both;">Try the live demo</p>
+        <p class="hero__cta-label"
+            style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px;animation:fadeInUp 0.8s ease 0.5s both;">
+            Try the live demo</p>
         <div class="hero__cta-group">
             <a href="emitter.html" class="btn btn--primary" id="cta-emitter">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
                 Launch Emitter
             </a>
             <a href="dashboard.html" class="btn btn--secondary" id="cta-dashboard">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="9" />
+                    <rect x="14" y="3" width="7" height="5" />
+                    <rect x="14" y="12" width="7" height="9" />
+                    <rect x="3" y="16" width="7" height="5" />
+                </svg>
                 View Dashboard
             </a>
         </div>
@@ -793,45 +897,69 @@
         <div class="features__grid">
             <article class="feature-card" id="feature-webflux">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Non-Blocking I/O</h3>
-                <p class="feature-card__desc">Built on Spring WebFlux and Project Reactor. The entire ingestion path is fully asynchronous — zero JVM thread blocking on the hot path for both reads and writes.</p>
+                <p class="feature-card__desc">Built on Spring WebFlux and Project Reactor. The entire ingestion path is
+                    fully asynchronous — zero JVM thread blocking on the hot path for both reads and writes.</p>
             </article>
             <article class="feature-card" id="feature-buffer">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Redis Event Buffer</h3>
-                <p class="feature-card__desc">Events are atomically queued via RPUSH and drained in bulk by a background sweeper. The API returns 202 Accepted before any database interaction occurs.</p>
+                <p class="feature-card__desc">Events are atomically queued via RPUSH and drained in bulk by a background
+                    sweeper. The API returns 202 Accepted before any database interaction occurs.</p>
             </article>
             <article class="feature-card" id="feature-stack">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <ellipse cx="12" cy="5" rx="9" ry="3" />
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Bulk PostgreSQL Writes</h3>
-                <p class="feature-card__desc">A single INSERT ... VALUES per batch cycle via R2DBC — not N individual inserts. Schema managed automatically by Flyway on startup.</p>
+                <p class="feature-card__desc">A single INSERT ... VALUES per batch cycle via R2DBC — not N individual
+                    inserts. Schema managed automatically by Flyway on startup.</p>
             </article>
             <article class="feature-card" id="feature-dlq">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4" />
+                        <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Dead Letter Queue</h3>
-                <p class="feature-card__desc">Failed database batches are never dropped. They are preserved in a Redis DLQ for inspection and replay. Zero silent data loss, ever.</p>
+                <p class="feature-card__desc">Failed database batches are never dropped. They are preserved in a Redis
+                    DLQ for inspection and replay. Zero silent data loss, ever.</p>
             </article>
             <article class="feature-card" id="feature-ratelimit">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Per-Key Rate Limiting</h3>
-                <p class="feature-card__desc">Token bucket algorithm backed by Redis. Works correctly across multiple instances with symmetric API key authentication and mtx_pub_ prefix enforcement.</p>
+                <p class="feature-card__desc">Token bucket algorithm backed by Redis. Works correctly across multiple
+                    instances with symmetric API key authentication and mtx_pub_ prefix enforcement.</p>
             </article>
             <article class="feature-card" id="feature-observability">
                 <div class="feature-card__icon">
-                    <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 20V10" />
+                        <path d="M12 20V4" />
+                        <path d="M6 20v-6" />
+                    </svg>
                 </div>
                 <h3 class="feature-card__title">Prometheus Metrics</h3>
-                <p class="feature-card__desc">Custom ingestion counters and batch size histograms exposed at /actuator/prometheus. Structured JSON logging compatible with Datadog, ELK, and Grafana Loki.</p>
+                <p class="feature-card__desc">Custom ingestion counters and batch size histograms exposed at
+                    /actuator/prometheus. Structured JSON logging compatible with Datadog, ELK, and Grafana Loki.</p>
             </article>
         </div>
     </section>
@@ -843,38 +971,55 @@
             <div class="pipeline-step">
                 <div class="pipeline-step__number">1</div>
                 <div class="pipeline-step__title">Ingest</div>
-                <div class="pipeline-step__desc">Client sends a POST to /api/v1/track with an API key. The payload is validated and decorated with a timestamp and client IP.</div>
+                <div class="pipeline-step__desc">Client sends a POST to /api/v1/track with an API key. The payload is
+                    validated and decorated with a timestamp and client IP.</div>
             </div>
             <div class="pipeline-arrow">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </svg>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-step__number">2</div>
                 <div class="pipeline-step__title">Buffer</div>
-                <div class="pipeline-step__desc">The event is atomically pushed to a Redis list. The API immediately returns 202 Accepted — no database wait.</div>
+                <div class="pipeline-step__desc">The event is atomically pushed to a Redis list. The API immediately
+                    returns 202 Accepted — no database wait.</div>
             </div>
             <div class="pipeline-arrow">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </svg>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-step__number">3</div>
                 <div class="pipeline-step__title">Flush</div>
-                <div class="pipeline-step__desc">A background sweeper atomically renames the queue every 5 seconds and drains the batch for bulk insertion.</div>
+                <div class="pipeline-step__desc">A background sweeper atomically renames the queue every 5 seconds and
+                    drains the batch for bulk insertion.</div>
             </div>
             <div class="pipeline-arrow">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </svg>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-step__number">4</div>
                 <div class="pipeline-step__title">Persist</div>
-                <div class="pipeline-step__desc">The entire batch is written to PostgreSQL in a single bulk INSERT via R2DBC. Failures go to the Dead Letter Queue.</div>
+                <div class="pipeline-step__desc">The entire batch is written to PostgreSQL in a single bulk INSERT via
+                    R2DBC. Failures go to the Dead Letter Queue.</div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer" id="footer">
-        <p>&copy; 2026 <a href="https://github.com/mihirvr/metricix" target="_blank" rel="noopener noreferrer">Metricix</a> &mdash; Open-source telemetry engine.</p>
+        <p>&copy; 2026 <a href="https://github.com/mihirvr/metricix" target="_blank"
+                rel="noopener noreferrer">Metricix</a> &mdash; Open-source telemetry engine.</p>
     </footer>
 
     <script>
@@ -1005,4 +1150,5 @@
         })();
     </script>
 </body>
+
 </html>
