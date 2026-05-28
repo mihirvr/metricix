@@ -24,6 +24,7 @@
 
 
 </div>
+<img width="1123" height="842" alt="copy Untitled-2026-05-06-2027" src="https://github.com/user-attachments/assets/2a07811b-a68e-4a98-b874-735462e245ca" />
 
 ---
 
@@ -85,19 +86,20 @@ An administrative dashboard for visualizing telemetry streams dynamically.
 
 Metricix is built for extreme throughput and low latency. To validate our Non-Functional Requirements (NFRs), the engine was stress-tested using **k6**.
 
-### The Benchmark (Sustained Load Test)
-To accurately measure the application's true processing latency without being bottlenecked by the local operating system's TCP network queue, we utilize an **Open Model (Constant Arrival Rate)** test. 
+### AWS EC2 Production Benchmark (Sustained Load)
 
-Instead of spamming the server as fast as possible (which tests network bridge limits, capping around ~2,500 RPS locally with a queued P95 of ~218ms), the Constant Arrival Rate model guarantees exactly 1,000 requests are dispatched every second. 
+This test measures the true processing latency through the full production pipeline, including Nginx SSL termination and network overhead on the live AWS EC2 instance.
+<img width="1374" height="957" alt="image" src="https://github.com/user-attachments/assets/15dee6c0-94b5-4c05-86ca-c10f6e15d3df" />
 
-**Results (Local Windows WSL2/Docker Environment):**
-* **Target Load:** 1,000 Requests Per Second (RPS)
+**Results:**
+
+* **Target Load:** 150 Requests Per Second (RPS)
 * **Duration:** 60 seconds
-* **Events Processed:** 59,985
+* **Events Processed:** 9,000
 * **Failure Rate:** 0.00%
-* **P95 Latency:** **5.62 ms**
+* **P95 Latency:** **7.04 ms**
 
-**Conclusion:** Under a sustained, production-grade load of 1,000 RPS, the Spring WebFlux + Redis Lettuce architecture successfully validates, decorates, and buffers telemetry payloads in under 6 milliseconds.
+**Conclusion:** Under a sustained production load, the Spring WebFlux + Redis architecture successfully intercepts, validates via Symmetric Key, and buffers telemetry payloads in under 8 milliseconds through the full HTTPS pipeline.
 ---
 ## Architecture
 
